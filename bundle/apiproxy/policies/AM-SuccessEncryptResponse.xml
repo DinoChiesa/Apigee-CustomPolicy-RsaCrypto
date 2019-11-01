@@ -1,0 +1,14 @@
+<AssignMessage name='AM-SuccessEncryptResponse'>
+  <IgnoreUnresolvedVariables>true</IgnoreUnresolvedVariables>
+  <Set>
+    <Payload contentType='application/json'>{
+  "ciphertext": "{escapeJSON(crypto_output)}",
+  "output_encoding": "{crypto_output_encoding}",
+  "cipher": "{crypto_cipher}",
+  "note": "you need the ciphertext, the mode and padding, and a matching key to decrypt."
+}
+</Payload>
+    <StatusCode>200</StatusCode>
+    <ReasonPhrase>OK</ReasonPhrase>
+  </Set>
+</AssignMessage>

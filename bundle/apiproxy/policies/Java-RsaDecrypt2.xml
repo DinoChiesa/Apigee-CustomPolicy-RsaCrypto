@@ -1,0 +1,13 @@
+<JavaCallout name="Java-RsaDecrypt2">
+  <Properties>
+    <Property name='action'>decrypt</Property>
+    <Property name='padding'>OAEP</Property>
+    <Property name='private-key'>{private.my_private_key}</Property>
+    <Property name='source'>request.formparam.ciphertext</Property>
+    <Property name='decode-source'>base16</Property>
+    <Property name='utf8-decode-result'>true</Property>
+    <Property name='debug'>true</Property>
+  </Properties>
+  <ClassName>com.google.apigee.edgecallouts.RsaCryptoCallout</ClassName>
+  <ResourceURL>java://edge-callout-rsa-crypto-20191101.jar</ResourceURL>
+</JavaCallout>
