@@ -97,6 +97,28 @@
       <Condition>(proxy.pathsuffix MatchesPath "/decrypt2") and (request.verb = "POST")</Condition>
     </Flow>
 
+    <Flow name="decrypt 3">
+      <Description>decrypt a JWT?</Description>
+      <Request>
+        <Step>
+          <Name>JS-SplitJwt</Name>
+        </Step>
+        <Step>
+          <Name>Java-RsaDecryptCEK</Name>
+        </Step>
+        <Step>
+          <Name>RF-CryptoError</Name>
+          <Condition>crypto_error != null</Condition>
+        </Step>
+      </Request>
+      <Response>
+        <Step>
+          <Name>AM-SuccessDecryptCEKResponse</Name>
+        </Step>
+      </Response>
+      <Condition>(proxy.pathsuffix MatchesPath "/decrypt3") and (request.verb = "POST")</Condition>
+    </Flow>
+
     <Flow name='unknown'>
       <Description>unknown request</Description>
       <Request>

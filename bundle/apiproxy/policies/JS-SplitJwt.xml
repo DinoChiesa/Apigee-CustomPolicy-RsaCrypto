@@ -1,0 +1,11 @@
+<Javascript name='JS-SplitJwt' timeLimit='200' >
+  <Source>
+var jwt = context.getVariable('inbound.jwt');
+var parts = jwt.split('.');
+context.setVariable('jwt_header', parts[0]);
+context.setVariable('jwt_encrypted_key', parts[1]);
+context.setVariable('jwt_iv', parts[2]);
+context.setVariable('jwt_ciphertext', parts[3]);
+context.setVariable('jwt_authentication_tag', parts[4]);
+  </Source>
+</Javascript>

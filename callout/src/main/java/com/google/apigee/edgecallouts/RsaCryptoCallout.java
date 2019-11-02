@@ -306,6 +306,8 @@ public class RsaCryptoCallout implements Execution {
   //   String encoded = Base16.encode(data);
   //   msgCtxt.setVariable(varName(name + "_b16"), encoded);
   //   encoded = Base64.getUrlEncoder().encodeToString(data);
+  //   msgCtxt.setVariable(varName(name + "_b64url"), encoded);
+  //   encoded = Base64.getEncoder().encodeToString(data);
   //   msgCtxt.setVariable(varName(name + "_b64"), encoded);
   // }
 

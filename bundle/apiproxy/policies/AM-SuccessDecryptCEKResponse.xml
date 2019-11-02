@@ -1,0 +1,16 @@
+<AssignMessage name='AM-SuccessDecryptCEKResponse'>
+  <IgnoreUnresolvedVariables>false</IgnoreUnresolvedVariables>
+  <Set>
+    <Payload contentType='application/json'>{
+  "cek-base16": "{escapeJSON(jwt_cek)}",
+  "iv-base64url": "{jwt_iv}",
+  "jwt-ciphertext": "{jwt_ciphertext}",
+  "aes-gcm-tag": "{jwt_authentication_tag}",
+  "jwt-header": "{jwt_header}",
+  "decoded-jwt-header": {decodeBase64(jwt_header)}
+}
+</Payload>
+    <StatusCode>200</StatusCode>
+    <ReasonPhrase>OK</ReasonPhrase>
+  </Set>
+</AssignMessage>
