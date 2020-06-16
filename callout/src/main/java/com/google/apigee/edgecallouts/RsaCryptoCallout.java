@@ -316,31 +316,33 @@ public class RsaCryptoCallout implements Execution {
     String outputVar = getOutputVar(msgCtxt);
     boolean emitGeneratedKey = (action == CryptoAction.ENCRYPT) && _getBooleanProperty(msgCtxt, "generate-key", false);
 
+    Function<byte[],Object> encoder = null;
     if (outputEncodingWanted == EncodingType.NONE) {
       // Emit the result as a Java byte array.
       // Will be retrievable only by another Java callout.
       msgCtxt.setVariable(varName("output_encoding"), "none");
-      msgCtxt.setVariable(outputVar, result);
+      encoder = (a) -> a; // nop
+    }
+    else if (outputEncodingWanted == EncodingType.BASE64) {
+      msgCtxt.setVariable(varName("output_encoding"), "base64");
+      encoder = (a) -> Base64.getEncoder().encodeToString(result);
+    }
+    else if (outputEncodingWanted == EncodingType.BASE64URL) {
+      msgCtxt.setVariable(varName("output_encoding"), "base64url");
+      encoder = (a) -> Base64.getUrlEncoder().encodeToString(result);
+    }
+    else if (outputEncodingWanted == EncodingType.BASE16) {
+      msgCtxt.setVariable(varName("output_encoding"), "base16");
+      encoder = (a) -> Base16.encode(a);
     }
     else {
-      Function<byte[],String> encoder = null;
-      if (outputEncodingWanted == EncodingType.BASE64) {
-        msgCtxt.setVariable(varName("output_encoding"), "base64");
-        encoder = (a) -> Base64.getEncoder().encodeToString(result);
-      }
-      else if (outputEncodingWanted == EncodingType.BASE64URL) {
-        msgCtxt.setVariable(varName("output_encoding"), "base64url");
-        encoder = (a) -> Base64.getUrlEncoder().encodeToString(result);
-      }
-      else if (outputEncodingWanted == EncodingType.BASE16) {
-        msgCtxt.setVariable(varName("output_encoding"), "base16");
-        encoder = (a) -> Base16.encode(a);
-      }
-      msgCtxt.setVariable(outputVar, encoder.apply(result));
-      if (emitGeneratedKey) {
-        String outputKeyVar = varName("output_key");
-        msgCtxt.setVariable(outputKeyVar, encoder.apply(source));
-      }
+      throw new IllegalStateException("unhandled encoding");
+    }
+
+    msgCtxt.setVariable(outputVar, encoder.apply(result));
+    if (emitGeneratedKey) {
+      String outputKeyVar = varName("output_key");
+      msgCtxt.setVariable(outputKeyVar, encoder.apply(source));
     }
   }
 
