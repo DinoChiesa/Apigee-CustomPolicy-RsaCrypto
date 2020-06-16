@@ -1,8 +1,7 @@
 # RSA Crypto callout
 
-This directory contains the Java source code for
-a Java callout for Apigee Edge that performs RSA Encryption and Decryption of
-data or message payloads.
+This directory contains the Java source code for a Java callout for Apigee Edge
+that performs RSA Encryption and Decryption of data or message payloads.
 
 RSA can encrypt only small payloads - RSA, as defined by PKCS#1,
 can be used to encrypt messages of limited size. For example, with the commonly used "v1.5
@@ -12,13 +11,15 @@ For OAEP, it is 214 bytes.
 
 This may seem to be a severe limitation. But, it may be useful to use RSA
 encryption to encrypt a symmetric key, and then use that symmetric key to
-AES-encrypt a larger message. This is a common pattern and is used in TLS,
-encrypted JWT, PGP, S/MIME, and many other security protocols.
+AES-encrypt a larger message. This is a common pattern and is known as a
+["hybrid cryptosystem"](https://en.wikipedia.org/wiki/Hybrid_cryptosystem). This
+model is used in TLS, encrypted JWT, PGP, S/MIME, and many other security
+protocols.
 
 The general pattern is:
 
 - generate a random AES key,
-- encrypt the plaintext with that key using AES with some specific mode
+- encrypt the plaintext with that key using AES with some specific mode, IV, etc.
 - encrypt the AES key with RSA
 - concatenate those ciphertexts in some way in the output stream.
 
@@ -26,7 +27,7 @@ This callout just does the 3rd part there: it encrypts a small message (which
 might be used as an AES key). It can also do the converse: decrypt the small message.
 
 
-One possible use of this policy: as part of a flow which parses an encrypted JWT. 
+One possible use of this policy: as part of a flow which parses an encrypted JWT.
 
 ## License
 
@@ -42,7 +43,7 @@ You do not need to build the Jar in order to use the custom policy.
 
 When you use the policy to encrypt data, the resulting cipher-text can be
 decrypted by other systems. Likewise, the policy can decrypt cipher-text
-obtained from other systems.  To do that, the encrypting and decrypting systems
+obtained from other systems. To do that, the encrypting and decrypting systems
 need to use a matched key pair (public and private), the same padding (either
 PKCS1 or OAEP).
 
@@ -66,7 +67,7 @@ There are a variety of options, which you can select using Properties in the con
   <JavaCallout name="Java-RsaEncrypt1">
     <Properties>
       <Property name='action'>encrypt</Property>
-      <Property name='public-key>{my_public_key}</Property>
+      <Property name='public-key'>{my_public_key}</Property>
       <Property name='encode-result'>base64</Property>
     </Properties>
     <ClassName>com.google.apigee.edgecallouts.RsaCryptoCallout</ClassName>
@@ -91,11 +92,11 @@ key, and the same mode and padding.
 ### Example: Basic Decryption
 
   ```xml
-  <JavaCallout name="Java-AesDecrypt1">
+  <JavaCallout name="Java-RsaDecrypt1">
     <Properties>
       <Property name='action'>decrypt</Property>
       <Property name='decode-source'>base64</Property>
-      <Property name='private-key>{private.my_private_key}</Property>
+      <Property name='private-key'>{private.my_private_key}</Property>
       <Property name='utf8-decode-result'>true</Property>
     </Properties>
     <ClassName>com.google.apigee.edgecallouts.RsasCryptoCallout</ClassName>
@@ -108,7 +109,7 @@ What will this policy configuration do?:
 * the action is decrypt, so the policy will decrypt
 * No source property is specified, therefore this policy will decrypt the message.content.
 * Because there is a decode-source property, 'base64', the policy will base64-decode the message.content to derive the cipher text.
-* There is no mode or padding specified, so RSA/ECB/PKCS5Padding is used.
+* There is no mode or padding specified, so RSA/None/PKCS1Padding is used.
 * The result is decoded via UTF-8 to produce a plain string. Obviously, this will work only if the original clear text was a plain string.
 
 
@@ -123,13 +124,12 @@ These are the properties available on the policy:
 | private-key       | required when action = "decrypt". a PEM string representing the private key.                                                                      |
 | private-key-password | optional. a password to use with an encrypted private key.                                                                                     |
 | source            | optional. name of the context variable containing the data to encrypt or decrypt. Do not surround in curly braces. Defaults to `message.content`. |
-| decode-source     | optional. either "base16" or "base64", to decode from a string to a octet stream.                                                                 |
-| mode              | optional. You probably don't want to use this. It defaults to ECB. Probably meaningless with rSA crypto.                                          |
-| padding           | optional. either PKCS1Padding or OAEP.  OAEP implies (is an alias of) OAEPWithSHA-256AndMGF1Padding.                                              |
+| decode-source     | optional. one of "base16", "base64", or "base64url", to decode from a string to a octet stream.                                                   |
+| padding           | optional. either PKCS1Padding or OAEP. OAEP implies (is an alias of) OAEPWithSHA-256AndMGF1Padding.                                               |
 | output            | optional. name of the variable in which to store the output. Defaults to crypto_output.                                                           |
 | encode-result     | optional. One of {base16, base64, base64url}. The default is to not encode the result.                                                            |
-| utf8-decode-result| optional. true or false. Applies only when action = decrypt. Decodes the byte[] array into a UTF-8 string.                                        |
-| debug             | optional. true or false. Emits extra context variables if true. Not for use in production.                                                        |
+| utf8-decode-result| optional. true or false. Applies only when action = decrypt. If true, the policy decodes the byte[] array into a UTF-8 string.                    |
+| debug             | optional. true or false. If true, the policy emits extra context variables. Not for use in production.                                            |
 
 
 
@@ -144,7 +144,7 @@ Errors can result at runtime if:
 * you pass a padding option that is not supported.
 * you specify `action` = decrypt, and don't supply a `public-key`
 * you specify `action` = encrypt, and don't supply a `private-key`
-* you use a `decode-*` parameter that is neither base16 nor base64
+* you use a `decode-*` parameter that is none of {base16, base64, base64url}
 * some other configuration value is null or invalid
 * you specify `action` = decrypt, and the ciphertext is corrupted
 * you specify `action` = encrypt, and the plaintext is more than 245 or 214 bytes (depending on the padding you chose)
@@ -175,7 +175,10 @@ If you edit policies offline, copy [the jar file for the custom policy](callout/
 
 These jars are specified in the pom.xml file.
 
-You do not need to upload any of these Jars to Apigee Edge with your policy.  They are all available in Apigee Edge already.
+The first two JARs are builtin to Apigee. You will need to upload the
+BouncyCastle jar as a resource to your Apigee instance, either
+with the apiproxy or with the organization or environment.
+
 
 ## Author
 

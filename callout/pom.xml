@@ -131,6 +131,8 @@
                     <!-- copy any required dependencies tht are not
                          already included in the Edge runtime: -->
                     <include name="lib/*.jar"/>
+                    <exclude name="lib/bcprov-jdk15on-*.*.jar"/>
+                    <exclude name="lib/bcpkix-jdk15on-*.*.jar"/>
                     <exclude name="lib/message-flow-1.0.0.jar"/>
                     <exclude name="lib/expressions-1.0.0.jar"/>
                   </fileset>
