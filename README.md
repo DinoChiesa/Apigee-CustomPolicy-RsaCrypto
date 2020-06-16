@@ -75,7 +75,7 @@ There are a variety of options, which you can select using Properties in the con
       <Property name='encode-result'>base64</Property>
     </Properties>
     <ClassName>com.google.apigee.edgecallouts.RsaCryptoCallout</ClassName>
-    <ResourceURL>java://edge-callout-rsa-crypto-20200615.jar</ResourceURL>
+    <ResourceURL>java://edge-callout-rsa-crypto-20200616.jar</ResourceURL>
   </JavaCallout>
   ```
 
@@ -104,7 +104,7 @@ key, and the same padding.
       <Property name='encode-result'>base64</Property>
     </Properties>
     <ClassName>com.google.apigee.edgecallouts.RsaCryptoCallout</ClassName>
-    <ResourceURL>java://edge-callout-rsa-crypto-20200615.jar</ResourceURL>
+    <ResourceURL>java://edge-callout-rsa-crypto-20200616.jar</ResourceURL>
   </JavaCallout>
   ```
 
@@ -136,7 +136,7 @@ the recovered AES key.
       <Property name='utf8-decode-result'>true</Property>
     </Properties>
     <ClassName>com.google.apigee.edgecallouts.RsasCryptoCallout</ClassName>
-    <ResourceURL>java://edge-callout-rsa-crypto-20200615.jar</ResourceURL>
+    <ResourceURL>java://edge-callout-rsa-crypto-20200616.jar</ResourceURL>
   </JavaCallout>
   ```
 
@@ -201,7 +201,7 @@ To build: `mvn clean package`
 
 The Jar source code includes tests.
 
-If you edit policies offline, copy [the jar file for the custom policy](callout/target/edge-callout-rsa-crypto-20200615.jar)  to your apiproxy/resources/java directory.  If you don't edit proxy bundles offline, upload that jar file into the API Proxy via the Edge API Proxy Editor .
+If you edit policies offline, copy [the jar file for the custom policy](callout/target/edge-callout-rsa-crypto-20200616.jar)  to your apiproxy/resources/java directory.  If you don't edit proxy bundles offline, upload that jar file into the API Proxy via the Edge API Proxy Editor .
 
 
 ## Build Dependencies

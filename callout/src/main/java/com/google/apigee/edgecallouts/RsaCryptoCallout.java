@@ -325,11 +325,11 @@ public class RsaCryptoCallout implements Execution {
     }
     else if (outputEncodingWanted == EncodingType.BASE64) {
       msgCtxt.setVariable(varName("output_encoding"), "base64");
-      encoder = (a) -> Base64.getEncoder().encodeToString(result);
+      encoder = (a) -> Base64.getEncoder().encodeToString(a);
     }
     else if (outputEncodingWanted == EncodingType.BASE64URL) {
       msgCtxt.setVariable(varName("output_encoding"), "base64url");
-      encoder = (a) -> Base64.getUrlEncoder().encodeToString(result);
+      encoder = (a) -> Base64.getUrlEncoder().encodeToString(a);
     }
     else if (outputEncodingWanted == EncodingType.BASE16) {
       msgCtxt.setVariable(varName("output_encoding"), "base16");
