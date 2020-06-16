@@ -3,7 +3,7 @@
 // Test code for the AES Crypto custom policy for Apigee Edge. Uses TestNG.
 // For full details see the Readme accompanying this source file.
 //
-// Copyright (c) 2018-2019 Google LLC
+// Copyright (c) 2018-2020 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -154,6 +154,31 @@ public class TestRsaCryptoCallout {
     System.out.println("output: " + output);
     String error = msgCtxt.getVariable("crypto_error");
     System.out.println("error : " + error);
+  }
+
+  @Test()
+  public void encrypt_GenerateKey_Base16() {
+    Map<String, String> properties = new HashMap<String, String>();
+    properties.put("testname", "encrypt_GenerateKey_Base16");
+    properties.put("action", "encrypt");
+    properties.put("public-key", publicKey1);
+    properties.put("debug", "true");
+    properties.put("generate-key", "true");
+    properties.put("source", "this-will-not-be-used");
+    properties.put("encode-result", "base16");
+
+    RsaCryptoCallout callout = new RsaCryptoCallout(properties);
+    ExecutionResult result = callout.execute(msgCtxt, exeCtxt);
+
+    // check result and output
+    reportThings(properties);
+    Assert.assertEquals(result, ExecutionResult.SUCCESS);
+    // retrieve output
+    String error = msgCtxt.getVariable("crypto_error");
+    Assert.assertNull(error);
+
+    String encodedKey = msgCtxt.getVariable("crypto_output_key");
+    Assert.assertNotNull(encodedKey);
   }
 
   @Test()

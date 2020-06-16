@@ -16,22 +16,26 @@ AES-encrypt a larger message. This is a common pattern and is known as a
 model is used in TLS, encrypted JWT, PGP, S/MIME, and many other security
 protocols.
 
-The general pattern is:
+The general pattern for encryption is:
 
-- generate a random AES key,
-- encrypt the plaintext with that key using AES with some specific mode, IV, etc.
-- encrypt the AES key with RSA
-- concatenate those ciphertexts in some way in the output stream.
+1. generate a random AES key,
+2. encrypt the plaintext with that key using AES with some specific mode, IV, etc.
+3. encrypt the AES key with RSA
+4. concatenate those ciphertexts in some way in the output stream, and transmit
+   that to the trusted receiver.
 
-This callout just does the 3rd part there: it encrypts a small message (which
-might be used as an AES key). It can also do the converse: decrypt the small message.
+This callout can do two things:
 
+- encrypt a small payload; this corresponds to the 3rd step in the above.
+- decrypt a small payload.  This would be the converse  of the above.
 
-One possible use of this policy: as part of a flow which parses an encrypted JWT.
+For encryption, the callout policy can also generate a random key; this
+corresponds to the 1st step in the above.
+
 
 ## License
 
-This code is Copyright (c) 2017-2019 Google LLC, and is released under the Apache Source License v2.0. For information see the [LICENSE](LICENSE) file.
+This code is Copyright (c) 2017-2020 Google LLC, and is released under the Apache Source License v2.0. For information see the [LICENSE](LICENSE) file.
 
 ## Disclaimer
 
@@ -71,7 +75,7 @@ There are a variety of options, which you can select using Properties in the con
       <Property name='encode-result'>base64</Property>
     </Properties>
     <ClassName>com.google.apigee.edgecallouts.RsaCryptoCallout</ClassName>
-    <ResourceURL>java://edge-callout-rsa-crypto-20191101.jar</ResourceURL>
+    <ResourceURL>java://edge-callout-rsa-crypto-20200615.jar</ResourceURL>
   </JavaCallout>
   ```
 
@@ -79,15 +83,47 @@ Here's what will happen with this policy configuration:
 
 * the action is encrypt, so the policy will encrypt
 * No source property is specified, therefore this policy will encrypt the message.content.
-* The public key will be deserialized from the PEM string in the variable `my_public_key`
-* There is no mode specified, so ECB is used.
+* The policy will deserialize the public key from the PEM string contained in the variable `my_public_key`
 * There is no padding specified, so PKCS1Padding is used.
 * The resulting ciphertext is encoded via base64, and stored into crypto_output (the default).
 
 To decrypt the resulting ciphertext, either within Apigee with this policy, or
 using some other system, the decryptor needs to use the corresponding private
-key, and the same mode and padding.
+key, and the same padding.
 
+
+
+## Example: Generate an AES key and Encrypt it
+
+  ```xml
+  <JavaCallout name="Java-RsaEncrypt2">
+    <Properties>
+      <Property name='action'>encrypt</Property>
+      <Property name='public-key'>{my_public_key}</Property>
+      <Property name='generate-key'>true</Property>
+      <Property name='encode-result'>base64</Property>
+    </Properties>
+    <ClassName>com.google.apigee.edgecallouts.RsaCryptoCallout</ClassName>
+    <ResourceURL>java://edge-callout-rsa-crypto-20200615.jar</ResourceURL>
+  </JavaCallout>
+  ```
+
+Here's what will happen with this policy configuration:
+
+* the action is encrypt, so the policy will encrypt
+* the `generate-key` property is true, so
+  the policy will generate a 128-bit random key. Any source property would be ignored.
+* The policy will deserialize the public key from the PEM string contained in the variable `my_public_key`
+* There is no padding specified, so PKCS1Padding is used.
+* The policy stores the outputs - the generated key and the ciphertext for that
+  key - into crypto_output_key and crypto_output, encoded via base64.
+
+The caller can now use the encoded AES key to encrypt something via AES.  The
+caller can then send the ciphertext output (an encrypted key) of this policy,
+along with the ciphertext of the AES encryption step, to a receiver. The
+receiver can decrypt the encrypted AES key using the RSA private key, and the
+same padding. Then the receiver can decrypt the AES-encrypted ciphertext with
+the recovered AES key.
 
 ### Example: Basic Decryption
 
@@ -100,7 +136,7 @@ key, and the same mode and padding.
       <Property name='utf8-decode-result'>true</Property>
     </Properties>
     <ClassName>com.google.apigee.edgecallouts.RsasCryptoCallout</ClassName>
-    <ResourceURL>java://edge-callout-rsa-crypto-20191101.jar</ResourceURL>
+    <ResourceURL>java://edge-callout-rsa-crypto-20200615.jar</ResourceURL>
   </JavaCallout>
   ```
 
@@ -109,7 +145,7 @@ What will this policy configuration do?:
 * the action is decrypt, so the policy will decrypt
 * No source property is specified, therefore this policy will decrypt the message.content.
 * Because there is a decode-source property, 'base64', the policy will base64-decode the message.content to derive the cipher text.
-* There is no mode or padding specified, so RSA/None/PKCS1Padding is used.
+* There is no padding specified, so RSA/None/PKCS1Padding is used.
 * The result is decoded via UTF-8 to produce a plain string. Obviously, this will work only if the original clear text was a plain string.
 
 
@@ -127,6 +163,7 @@ These are the properties available on the policy:
 | decode-source     | optional. one of "base16", "base64", or "base64url", to decode from a string to a octet stream.                                                   |
 | padding           | optional. either PKCS1Padding or OAEP. OAEP implies (is an alias of) OAEPWithSHA-256AndMGF1Padding.                                               |
 | output            | optional. name of the variable in which to store the output. Defaults to crypto_output.                                                           |
+| generate-key      | optional. a boolean. Meaningful only when action = "encrypt". If true, the policy generates a random key of length 128 bits.                      |
 | encode-result     | optional. One of {base16, base64, base64url}. The default is to not encode the result.                                                            |
 | utf8-decode-result| optional. true or false. Applies only when action = decrypt. If true, the policy decodes the byte[] array into a UTF-8 string.                    |
 | debug             | optional. true or false. If true, the policy emits extra context variables. Not for use in production.                                            |
@@ -164,7 +201,7 @@ To build: `mvn clean package`
 
 The Jar source code includes tests.
 
-If you edit policies offline, copy [the jar file for the custom policy](callout/target/edge-callout-rsa-crypto-20191101.jar)  to your apiproxy/resources/java directory.  If you don't edit proxy bundles offline, upload that jar file into the API Proxy via the Edge API Proxy Editor .
+If you edit policies offline, copy [the jar file for the custom policy](callout/target/edge-callout-rsa-crypto-20200615.jar)  to your apiproxy/resources/java directory.  If you don't edit proxy bundles offline, upload that jar file into the API Proxy via the Edge API Proxy Editor .
 
 
 ## Build Dependencies

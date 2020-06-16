@@ -3,7 +3,7 @@
 // This is the main callout class for the RSA Crypto custom policy for Apigee Edge.
 // For full details see the Readme accompanying this source file.
 //
-// Copyright (c) 2018-2019 Google LLC.
+// Copyright (c) 2018-2020 Google LLC.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,8 +19,7 @@
 //
 // @author: Dino Chiesa
 //
-// Thursday,  1 February 2018
-//
+
 
 package com.google.apigee.edgecallouts;
 
@@ -29,17 +28,19 @@ import com.apigee.flow.execution.ExecutionResult;
 import com.apigee.flow.execution.IOIntensive;
 import com.apigee.flow.execution.spi.Execution;
 import com.apigee.flow.message.MessageContext;
+import com.google.apigee.encoding.Base16;
 import com.google.apigee.util.CalloutUtil;
 import com.google.apigee.util.KeyUtil;
-import com.google.apigee.encoding.Base16;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.SecureRandom;
 import java.security.spec.MGF1ParameterSpec;
 import java.util.Base64;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.crypto.Cipher;
@@ -63,10 +64,9 @@ public class RsaCryptoCallout implements Execution {
     Pattern.compile("(.*?)\\{([^\\{\\} :][^\\{\\} ]*?)\\}(.*?)");
   private static final Pattern commonErrorPattern = Pattern.compile("^(.+?)[:;] (.+)$");
 
-  private final Map<String,String> properties;
+  private static final SecureRandom secureRandom = new SecureRandom();
 
-  // static {
-  // }
+  private final Map<String,String> properties;
 
   public RsaCryptoCallout(Map properties) {
     this.properties = CalloutUtil.genericizeMap(properties);
@@ -311,25 +311,36 @@ public class RsaCryptoCallout implements Execution {
   //   msgCtxt.setVariable(varName(name + "_b64"), encoded);
   // }
 
-  private void setOutput(MessageContext msgCtxt, byte[] result) throws Exception {
+  private void setOutput(MessageContext msgCtxt, CryptoAction action, byte[] source, byte[] result) throws Exception {
     EncodingType outputEncodingWanted = getEncodeResult(msgCtxt);
     String outputVar = getOutputVar(msgCtxt);
-    if (outputEncodingWanted == EncodingType.BASE64) {
-      msgCtxt.setVariable(varName("output_encoding"), "base64");
-      msgCtxt.setVariable(outputVar, Base64.getEncoder().encodeToString(result));
-    }
-    else if (outputEncodingWanted == EncodingType.BASE64URL) {
-      msgCtxt.setVariable(varName("output_encoding"), "base64url");
-      msgCtxt.setVariable(outputVar, Base64.getUrlEncoder().encodeToString(result));
-    }
-    else if (outputEncodingWanted == EncodingType.BASE16) {
-      msgCtxt.setVariable(varName("output_encoding"), "base16");
-      msgCtxt.setVariable(outputVar, Base16.encode(result));
-    }
-    else {
-      // emit the result as a Java byte array
+    boolean emitGeneratedKey = (action == CryptoAction.ENCRYPT) && _getBooleanProperty(msgCtxt, "generate-key", false);
+
+    if (outputEncodingWanted == EncodingType.NONE) {
+      // Emit the result as a Java byte array.
+      // Will be retrievable only by another Java callout.
       msgCtxt.setVariable(varName("output_encoding"), "none");
       msgCtxt.setVariable(outputVar, result);
+    }
+    else {
+      Function<byte[],String> encoder = null;
+      if (outputEncodingWanted == EncodingType.BASE64) {
+        msgCtxt.setVariable(varName("output_encoding"), "base64");
+        encoder = (a) -> Base64.getEncoder().encodeToString(result);
+      }
+      else if (outputEncodingWanted == EncodingType.BASE64URL) {
+        msgCtxt.setVariable(varName("output_encoding"), "base64url");
+        encoder = (a) -> Base64.getUrlEncoder().encodeToString(result);
+      }
+      else if (outputEncodingWanted == EncodingType.BASE16) {
+        msgCtxt.setVariable(varName("output_encoding"), "base16");
+        encoder = (a) -> Base16.encode(a);
+      }
+      msgCtxt.setVariable(outputVar, encoder.apply(result));
+      if (emitGeneratedKey) {
+        String outputKeyVar = varName("output_key");
+        msgCtxt.setVariable(outputKeyVar, encoder.apply(source));
+      }
     }
   }
 
@@ -352,6 +363,30 @@ public class RsaCryptoCallout implements Execution {
     }
   }
 
+  protected byte[] getSourceBytes(CryptoAction action, MessageContext msgCtxt) throws Exception {
+    if (action == CryptoAction.ENCRYPT) {
+      boolean wantGenerateKey = _getBooleanProperty(msgCtxt, "generate-key", false);
+      if (wantGenerateKey) {
+        byte[] key = new byte[16];
+        secureRandom.nextBytes(key);
+        return key;
+      }
+    }
+
+    Object source1 = msgCtxt.getVariable(getSourceVar());
+    if (source1 instanceof byte[]) {
+      return (byte[])source1;
+    }
+
+    if (source1 instanceof String) {
+      EncodingType decodingKind = _getEncodingTypeProperty(msgCtxt, "decode-source");
+      return decodeString((String)source1, decodingKind);
+    }
+
+    // coerce and hope for the best
+    return (source1.toString()).getBytes(StandardCharsets.UTF_8);
+  }
+
   public ExecutionResult execute(MessageContext msgCtxt, ExecutionContext exeCtxt) {
     boolean debug = false;
     try {
@@ -362,22 +397,10 @@ public class RsaCryptoCallout implements Execution {
 
       CryptoAction action = getAction(msgCtxt); // encrypt or decrypt
       msgCtxt.setVariable(varName("action"), action.name().toLowerCase());
-      Object source1 = msgCtxt.getVariable(getSourceVar());
-      byte[] source;
 
-      if (source1 instanceof byte[]) {
-        source = (byte[])source1;
-      }
-      else if (source1 instanceof String) {
-        EncodingType decodingKind = _getEncodingTypeProperty(msgCtxt, "decode-source");
-        source = decodeString((String)source1, decodingKind);
-      }
-      else {
-        // coerce and hope for the best
-        source = (source1.toString()).getBytes(StandardCharsets.UTF_8);
-      }
-
+      byte[] source = getSourceBytes(action, msgCtxt);
       byte[] result;
+
       if (action == CryptoAction.DECRYPT) {
         PrivateKey privateKey = getPrivateKey(msgCtxt);
         result = rsaDecrypt(cipherName, privateKey, getMgf1Hash(msgCtxt), source);
@@ -387,13 +410,13 @@ public class RsaCryptoCallout implements Execution {
           msgCtxt.setVariable(getOutputVar(msgCtxt), new String(result, StandardCharsets.UTF_8));
         }
         else {
-          setOutput(msgCtxt, result);
+          setOutput(msgCtxt, action, source, result);
         }
       }
       else {
         PublicKey publicKey = getPublicKey(msgCtxt);
         result = rsaEncrypt(cipherName, publicKey, getMgf1Hash(msgCtxt), source);
-        setOutput(msgCtxt, result);
+        setOutput(msgCtxt, action, source, result);
       }
     }
     catch (Exception e){
