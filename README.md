@@ -9,9 +9,18 @@ padding" and a 2048-bit RSA key, the maximum size of data which can be
 encrypted with RSA is 245 bytes. ([cite](https://security.stackexchange.com/a/33445/81523))
 For OAEP, it is 214 bytes.
 
-This may seem to be a severe limitation. But, it may be useful to use RSA
-encryption to encrypt a symmetric key, and then use that symmetric key to
-AES-encrypt a larger message. This is a common pattern and is known as a
+This may seem to be a severe limitation. But, in practice it's easy to avoid.
+It's useful to use RSA encryption to encrypt a symmetric key, and then use that
+symmetric key to AES-encrypt a larger message. There are two keys - the first
+key encrypts the second key; let's call the first key the
+key-encrypting-key. The second key encrypts the content, let's call it the
+content-encrypting-key (CEK).
+
+Then the encrypting party can send the encrypted payload along with the
+encrypted content-encrypting-key. The decrypting party uses the private RSA key
+to decrypt the CEK, then uses the decrypted CEK to decrypt the payload.
+
+This is a common pattern and is known as a
 ["hybrid cryptosystem"](https://en.wikipedia.org/wiki/Hybrid_cryptosystem). This
 model is used in TLS, encrypted JWT, PGP, S/MIME, and many other security
 protocols.
@@ -21,8 +30,8 @@ The general pattern for encryption is:
 1. generate a random AES key,
 2. encrypt the plaintext with that key using AES with some specific mode, IV, etc.
 3. encrypt the AES key with RSA
-4. concatenate those ciphertexts in some way in the output stream, and transmit
-   that to the trusted receiver.
+4. concatenate those two ciphertexts in some way in the output stream, and transmit
+   that to the trusted receiver. (You probably also need to transmit the IV)
 
 This callout can do two things:
 
@@ -32,10 +41,18 @@ This callout can do two things:
 For encryption, the callout policy can also generate a random key; this
 corresponds to the 1st step in the above.
 
+If you want to implement the hybrid cryptosystem, then you'll want to couple
+this callout with something that does AES crypto. For that you may want to use
+the [AES Crypto callout](https://github.com/DinoChiesa/Apigee-CustomPolicy-AesCrypto).
+
+By the way, this pattern is what underlies the "encrypted JWT" standard when
+using asymmetric keys.
+
 
 ## License
 
-This code is Copyright (c) 2017-2020 Google LLC, and is released under the Apache Source License v2.0. For information see the [LICENSE](LICENSE) file.
+This code is Copyright (c) 2017-2020 Google LLC, and is released under the
+Apache Source License v2.0. For information see the [LICENSE](LICENSE) file.
 
 ## Disclaimer
 
@@ -208,7 +225,7 @@ If you edit policies offline, copy [the jar file for the custom policy](callout/
 
 * Apigee Edge expressions v1.0
 * Apigee Edge message-flow v1.0
-* Bouncy Castle 1.62
+* Bouncy Castle 1.64
 
 These jars are specified in the pom.xml file.
 
