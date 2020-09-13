@@ -1,16 +1,20 @@
 # RSA Crypto callout
 
 This directory contains the Java source code for a Java callout for Apigee Edge
-that performs RSA Encryption and Decryption of data or message payloads.
+that performs RSA Encryption and Decryption of data or message payloads. Specifically it can perform
+RSA encryption with PKCS1 padding, or RSA encryption with OAEP padding, using SHA-256 and MGF1 as the hash functions. (For more on OAEP, see [this](https://stackoverflow.com/a/49484492/48082).)
+This callout does not perform RSA signing.
 
-RSA can encrypt only small payloads - RSA, as defined by PKCS#1,
-can be used to encrypt messages of limited size. For example, with the commonly used "v1.5
-padding" and a 2048-bit RSA key, the maximum size of data which can be
+## Some Background
+
+There are payload size limits when you encrypt using RSA keys. In more detail, RSA, as defined by PKCS#1,
+can be used to encrypt messages of limited size, and this size varies with the kind of "padding" used for the encryption. For example, with the commonly used "v1.5
+padding" and a 2048-bit RSA key, the maximum size of data that can be
 encrypted with RSA is 245 bytes. ([cite](https://security.stackexchange.com/a/33445/81523))
-For OAEP, it is 214 bytes.
+For OAEP padding, the maximum size is 214 bytes.
 
-This may seem to be a severe limitation. But, in practice it's easy to avoid.
-It's useful to use RSA encryption to encrypt a symmetric key, and then use that
+This may seem to be a severe limitation. But, in practice people avoid this limitation by using hybrid cryptosystems:
+use RSA encryption to encrypt a symmetric key, which is small, and fits under the limit for RSA crypto. Then use that
 symmetric key to AES-encrypt a larger message. There are two keys - the first
 key encrypts the second key; let's call the first key the
 key-encrypting-key. The second key encrypts the content, let's call it the
@@ -20,7 +24,7 @@ Then the encrypting party can send the encrypted payload along with the
 encrypted content-encrypting-key. The decrypting party uses the private RSA key
 to decrypt the CEK, then uses the decrypted CEK to decrypt the payload.
 
-This is a common pattern and is known as a
+This common pattern is known as a
 ["hybrid cryptosystem"](https://en.wikipedia.org/wiki/Hybrid_cryptosystem). This
 model is used in TLS, encrypted JWT, PGP, S/MIME, and many other security
 protocols.
@@ -33,10 +37,13 @@ The general pattern for encryption is:
 4. concatenate those two ciphertexts in some way in the output stream, and transmit
    that to the trusted receiver. (You probably also need to transmit the IV)
 
-This callout can do two things:
+## This callout does not perform hybrid crypto
 
-- encrypt a small payload; this corresponds to the 3rd step in the above.
-- decrypt a small payload.  This would be the converse  of the above.
+This callout does not perform hybrid cryptography.
+This callout does only RSA crypto. It can do two things:
+
+- encrypt a small payload with an RSA public key; this corresponds to the 3rd step in the above.
+- decrypt a small payload with an RSA private key.  This would be the converse  of the above.
 
 For encryption, the callout policy can also generate a random key; this
 corresponds to the 1st step in the above.
@@ -77,9 +84,9 @@ There are a variety of options, which you can select using Properties in the con
 
 - the policy uses as its source, the message.content. If you wish to encrypt something else, specify it with the source property
 - The policy always uses ECB, which is sort of a misnomer since it's a single block encryption.
-- when using OAEP padding, the policy uses SHA-256 as the MGF1 hash. You can specify this with the mgf1-hash property.
-- you can optionally encode (base64, base64url, base16) the output octet stream upon encryption
-- you can optionally UTF-8 decode the output octet stream upon decryption
+- when using OAEP padding, the policy uses SHA-256 and MGF1 as the hashes. You cannot override either of those. The MGF1 internally by default uses SHA-256, and  you _can_ override that with the mgf1-hash property. Specify one of {SHA1, SHA256, SHA384, SHA512}.
+- you can optionally encode (base64, base64url, base16) the output octet stream upon encryption.
+- you can optionally UTF-8 decode the output octet stream upon decryption.
 
 
 ## Example: Basic Encryption with Numerous Defaults
@@ -92,22 +99,21 @@ There are a variety of options, which you can select using Properties in the con
       <Property name='encode-result'>base64</Property>
     </Properties>
     <ClassName>com.google.apigee.edgecallouts.RsaCryptoCallout</ClassName>
-    <ResourceURL>java://edge-callout-rsa-crypto-20200616.jar</ResourceURL>
+    <ResourceURL>java://edge-callout-rsa-crypto-20200912.jar</ResourceURL>
   </JavaCallout>
   ```
 
 Here's what will happen with this policy configuration:
 
-* the action is encrypt, so the policy will encrypt
-* No source property is specified, therefore this policy will encrypt the message.content.
-* The policy will deserialize the public key from the PEM string contained in the variable `my_public_key`
-* There is no padding specified, so PKCS1Padding is used.
-* The resulting ciphertext is encoded via base64, and stored into crypto_output (the default).
+* the `action` is encrypt, so the policy will encrypt.
+* No `source` property is specified, therefore this policy will encrypt the message.content.
+* When using the policy to encrypt, you must specify a public key. With the above configuration, the policy will deserialize the public key from the PEM string contained in the variable `my_public_key`.
+* There is no `padding` property specified, so the policy will use PKCS1 padding.
+* No `output` property is present, so the policy will encode the resulting ciphertext via base64, and store it into a variable named crypto_output (the default).
 
 To decrypt the resulting ciphertext, either within Apigee with this policy, or
 using some other system, the decryptor needs to use the corresponding private
 key, and the same padding.
-
 
 
 ## Example: Generate an AES key and Encrypt it
@@ -121,22 +127,22 @@ key, and the same padding.
       <Property name='encode-result'>base64</Property>
     </Properties>
     <ClassName>com.google.apigee.edgecallouts.RsaCryptoCallout</ClassName>
-    <ResourceURL>java://edge-callout-rsa-crypto-20200616.jar</ResourceURL>
+    <ResourceURL>java://edge-callout-rsa-crypto-20200912.jar</ResourceURL>
   </JavaCallout>
   ```
 
 Here's what will happen with this policy configuration:
 
-* the action is encrypt, so the policy will encrypt
+* the `action` is encrypt, so the policy will encrypt
 * the `generate-key` property is true, so
-  the policy will generate a 128-bit random key. Any source property would be ignored.
+  Because `generate-key` is true, the policy will generate a 128-bit random key and use that as the "source", or the thing to encrypt. The policy will ignore a `source` property when `generate-key` is true.
 * The policy will deserialize the public key from the PEM string contained in the variable `my_public_key`
-* There is no padding specified, so PKCS1Padding is used.
-* The policy stores the outputs - the generated key and the ciphertext for that
-  key - into crypto_output_key and crypto_output, encoded via base64.
+* There is no` padding` specified, so PKCS1Padding is used.
+* The policy stores the outputs - the generated key in cleartext, and the ciphertext for that
+  key (in other words, the encrypted version) - into context variables named `crypto_output_key` and `crypto_output`, encoded via base64.
 
-The caller can now use the encoded AES key to encrypt something via AES.  The
-caller can then send the ciphertext output (an encrypted key) of this policy,
+The proxy can subsequently use the encoded AES key to encrypt something via AES.  The
+caller can then send the ciphertext output (the encrypted key) of this policy,
 along with the ciphertext of the AES encryption step, to a receiver. The
 receiver can decrypt the encrypted AES key using the RSA private key, and the
 same padding. Then the receiver can decrypt the AES-encrypted ciphertext with
@@ -153,17 +159,17 @@ the recovered AES key.
       <Property name='utf8-decode-result'>true</Property>
     </Properties>
     <ClassName>com.google.apigee.edgecallouts.RsasCryptoCallout</ClassName>
-    <ResourceURL>java://edge-callout-rsa-crypto-20200616.jar</ResourceURL>
+    <ResourceURL>java://edge-callout-rsa-crypto-20200912.jar</ResourceURL>
   </JavaCallout>
   ```
 
 What will this policy configuration do?:
 
-* the action is decrypt, so the policy will decrypt
-* No source property is specified, therefore this policy will decrypt the message.content.
-* Because there is a decode-source property, 'base64', the policy will base64-decode the message.content to derive the cipher text.
-* There is no padding specified, so RSA/None/PKCS1Padding is used.
-* The result is decoded via UTF-8 to produce a plain string. Obviously, this will work only if the original clear text was a plain string.
+* the `action` is decrypt, so the policy will decrypt
+* No `source` property is specified, therefore this policy will decrypt the message.content.
+* Because there is a `decode-source` property, 'base64', the policy will base64-decode the message.content to derive the cipher text.
+* There is no `padding` specified, so PKCS1 padding is used.
+* The policy will attempt to decoded the cleartext bytes via UTF-8 to produce a plain string. Obviously, this will work only if the original clear text was a plain string encoded with UTF-8.
 
 
 ### Full Properties List
@@ -178,7 +184,8 @@ These are the properties available on the policy:
 | private-key-password | optional. a password to use with an encrypted private key.                                                                                     |
 | source            | optional. name of the context variable containing the data to encrypt or decrypt. Do not surround in curly braces. Defaults to `message.content`. |
 | decode-source     | optional. one of "base16", "base64", or "base64url", to decode from a string to a octet stream.                                                   |
-| padding           | optional. either PKCS1Padding or OAEP. OAEP implies (is an alias of) OAEPWithSHA-256AndMGF1Padding.                                               |
+| padding           | optional. either PKCS1 or OAEP. OAEP implies OAEP with SHA-256 and MGF1 .                                                                         |
+| mgf1-hash         | optional. The policy uses SHA256 for the inner hash used by MGF1. Specify one of {SHA1, SHA256, SHA384, SHA512} to override that.                 |
 | output            | optional. name of the variable in which to store the output. Defaults to crypto_output.                                                           |
 | generate-key      | optional. a boolean. Meaningful only when action = "encrypt". If true, the policy generates a random key of length 128 bits.                      |
 | encode-result     | optional. One of {base16, base64, base64url}. The default is to not encode the result.                                                            |
@@ -195,13 +202,13 @@ Errors can result at runtime if:
 
 * you do not specify an `action` property, or the `action` is neither `encrypt` nor `decrypt`
 * you pass an invalid string for the public key or private key
-* you pass a padding option that is not supported.
+* you pass a padding option that is neither OAEP nor PKCS1.
 * you specify `action` = decrypt, and don't supply a `public-key`
 * you specify `action` = encrypt, and don't supply a `private-key`
 * you use a `decode-*` parameter that is none of {base16, base64, base64url}
 * some other configuration value is null or invalid
 * you specify `action` = decrypt, and the ciphertext is corrupted
-* you specify `action` = encrypt, and the plaintext is more than 245 or 214 bytes (depending on the padding you chose)
+* you specify `action` = encrypt, and the plaintext is more than 245 if you use PKCS1 padding, or more than 214 bytes if you use OAEP padding.
 
 ## Building the Jar
 
@@ -218,7 +225,7 @@ To build: `mvn clean package`
 
 The Jar source code includes tests.
 
-If you edit policies offline, copy [the jar file for the custom policy](callout/target/edge-callout-rsa-crypto-20200616.jar)  to your apiproxy/resources/java directory.  If you don't edit proxy bundles offline, upload that jar file into the API Proxy via the Edge API Proxy Editor .
+If you edit policies offline, copy [the jar file for the custom policy](callout/target/edge-callout-rsa-crypto-20200912.jar)  to your apiproxy/resources/java directory.  If you don't edit proxy bundles offline, upload that jar file into the API Proxy via the Edge API Proxy Editor .
 
 
 ## Build Dependencies

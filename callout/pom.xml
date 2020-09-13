@@ -4,7 +4,7 @@
 
   <groupId>com.google.apigee</groupId>
   <artifactId>edge-callout-rsa-crypto</artifactId>
-  <version>20200616</version>
+  <version>20200912</version>
   <name>EdgeCustomRsaEncryptor</name>
   <url>http://maven.apache.org</url>
   <packaging>jar</packaging>

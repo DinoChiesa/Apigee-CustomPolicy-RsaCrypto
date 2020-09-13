@@ -20,7 +20,6 @@
 // @author: Dino Chiesa
 //
 
-
 package com.google.apigee.edgecallouts;
 
 import com.apigee.flow.execution.ExecutionContext;
@@ -56,7 +55,7 @@ public class RsaCryptoCallout implements Execution {
   private static final String varprefix = "crypto_";
   private static final String defaultOutputVarSuffix = "output";
   private static final String TRUE = "true";
-  private static final Pattern paddingPattern = Pattern.compile("^(PKCS1Padding|OAEPWithSHA-256AndMGF1Padding)$", Pattern.CASE_INSENSITIVE);
+  private static final Pattern paddingPattern = Pattern.compile("^(PKCS1|OAEP|PKCS1Padding|OAEPWithSHA-256AndMGF1Padding)$", Pattern.CASE_INSENSITIVE);
   private static final Pattern fullCipherPattern = Pattern.compile("^(RSA)/(None|ECB)/(PKCS1Padding|OAEPWithSHA-256AndMGF1Padding)$", Pattern.CASE_INSENSITIVE);
   private static final Pattern cipherNamePattern = Pattern.compile("^(RSA)$", Pattern.CASE_INSENSITIVE);
   private static final Pattern modeNamePattern = Pattern.compile("^(None|ECB)$", Pattern.CASE_INSENSITIVE);
@@ -204,8 +203,15 @@ public class RsaCryptoCallout implements Execution {
 
   private String getPadding(MessageContext msgCtxt) throws Exception {
     String padding = _getStringProp(msgCtxt, "padding", defaultCryptoPadding);
+    Matcher m = paddingPattern.matcher(padding);
+    if (!m.matches()) {
+      throw new IllegalStateException(String.format("Supplied padding (%s) is invalid.", padding));
+    }
     if ("OAEP".equals(padding)) {
       padding = "OAEPWithSHA-256AndMGF1Padding"; // alias
+    }
+    else if ("PKCS1".equals(padding)) {
+      padding = "PKCS1Padding"; // alias
     }
     return padding;
   }

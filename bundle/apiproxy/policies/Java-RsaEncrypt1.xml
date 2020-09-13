@@ -6,5 +6,5 @@
     <Property name='encode-result'>base64url</Property>
   </Properties>
   <ClassName>com.google.apigee.edgecallouts.RsaCryptoCallout</ClassName>
-  <ResourceURL>java://edge-callout-rsa-crypto-20200616.jar</ResourceURL>
+  <ResourceURL>java://edge-callout-rsa-crypto-20200912.jar</ResourceURL>
 </JavaCallout>
