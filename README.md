@@ -245,3 +245,8 @@ with the apiproxy or with the organization or environment.
 
 Dino Chiesa
 godino@google.com
+
+
+## Bugs & Limitations
+
+* Does not allow parameterization of the hash function for RSA-OAEP.  Always uses SHA-256.
