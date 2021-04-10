@@ -3,9 +3,9 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>com.google.apigee</groupId>
-  <artifactId>edge-callout-rsa-crypto</artifactId>
-  <version>20200912</version>
-  <name>EdgeCustomRsaEncryptor</name>
+  <artifactId>apigee-callout-rsa-crypto</artifactId>
+  <version>20210409</version>
+  <name>ApigeeCustomRsaEncryptor</name>
   <url>http://maven.apache.org</url>
   <packaging>jar</packaging>
 
@@ -160,7 +160,7 @@
             <configuration>
               <rules>
                 <requireMavenVersion>
-                  <version>3.0.5</version>
+                  <version>3.5.0</version>
                 </requireMavenVersion>
               </rules>
             </configuration>

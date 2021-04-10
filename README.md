@@ -1,6 +1,6 @@
 # RSA Crypto callout
 
-This directory contains the Java source code for a Java callout for Apigee Edge
+This directory contains the Java source code for a Java callout for Apigee
 that performs RSA Encryption and Decryption of data or message payloads. Specifically it can perform
 RSA encryption with PKCS1 padding, or RSA encryption with OAEP padding, using SHA-256 and MGF1 as the hash functions. (For more on OAEP, see [this](https://stackoverflow.com/a/49484492/48082).)
 This callout does not perform RSA signing.
@@ -98,8 +98,8 @@ There are a variety of options, which you can select using Properties in the con
       <Property name='public-key'>{my_public_key}</Property>
       <Property name='encode-result'>base64</Property>
     </Properties>
-    <ClassName>com.google.apigee.edgecallouts.RsaCryptoCallout</ClassName>
-    <ResourceURL>java://edge-callout-rsa-crypto-20200912.jar</ResourceURL>
+    <ClassName>com.google.apigee.callouts.RsaCryptoCallout</ClassName>
+    <ResourceURL>java://apigee-callout-rsa-crypto-20210409.jar</ResourceURL>
   </JavaCallout>
   ```
 
@@ -126,8 +126,8 @@ key, and the same padding.
       <Property name='generate-key'>true</Property>
       <Property name='encode-result'>base64</Property>
     </Properties>
-    <ClassName>com.google.apigee.edgecallouts.RsaCryptoCallout</ClassName>
-    <ResourceURL>java://edge-callout-rsa-crypto-20200912.jar</ResourceURL>
+    <ClassName>com.google.apigee.callouts.RsaCryptoCallout</ClassName>
+    <ResourceURL>java://apigee-callout-rsa-crypto-20210409.jar</ResourceURL>
   </JavaCallout>
   ```
 
@@ -158,8 +158,8 @@ the recovered AES key.
       <Property name='private-key'>{private.my_private_key}</Property>
       <Property name='utf8-decode-result'>true</Property>
     </Properties>
-    <ClassName>com.google.apigee.edgecallouts.RsasCryptoCallout</ClassName>
-    <ResourceURL>java://edge-callout-rsa-crypto-20200912.jar</ResourceURL>
+    <ClassName>com.google.apigee.callouts.RsaCryptoCallout</ClassName>
+    <ResourceURL>java://apigee-callout-rsa-crypto-20210409.jar</ResourceURL>
   </JavaCallout>
   ```
 
@@ -217,7 +217,7 @@ ready to use, with policy configuration. You need to re-build the jar only if yo
 to modify the behavior of the custom policy. Before you do that, be sure you understand
 all the configuration options - the policy may be usable for you without modification.
 
-If you do wish to build the jar, you can use [maven](https://maven.apache.org/download.cgi) to do so. The build requires JDK8. Before you run the build the first time, you need to download the Apigee Edge dependencies into your local maven repo.
+If you do wish to build the jar, you can use [maven](https://maven.apache.org/download.cgi) to do so. The build requires JDK8. Before you run the build the first time, you need to download the Apigee dependencies into your local maven repo.
 
 Preparation, first time only: `./buildsetup.sh`
 
@@ -225,13 +225,13 @@ To build: `mvn clean package`
 
 The Jar source code includes tests.
 
-If you edit policies offline, copy [the jar file for the custom policy](callout/target/edge-callout-rsa-crypto-20200912.jar)  to your apiproxy/resources/java directory.  If you don't edit proxy bundles offline, upload that jar file into the API Proxy via the Edge API Proxy Editor .
+If you edit policies offline, copy [the jar file for the custom policy](callout/target/apigee-callout-rsa-crypto-20210409.jar)  to your apiproxy/resources/java directory.  If you don't edit proxy bundles offline, upload that jar file into the API Proxy via the Apigee API Proxy Editor .
 
 
 ## Build Dependencies
 
-* Apigee Edge expressions v1.0
-* Apigee Edge message-flow v1.0
+* Apigee expressions v1.0
+* Apigee message-flow v1.0
 * Bouncy Castle 1.64
 
 These jars are specified in the pom.xml file.
@@ -243,7 +243,7 @@ with the apiproxy or with the organization or environment.
 
 ## Author
 
-Dino Chiesa
+Dino Chiesa  
 godino@google.com
 
 
