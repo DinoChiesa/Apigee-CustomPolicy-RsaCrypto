@@ -8,10 +8,11 @@ This callout does not perform RSA signing.
 ## Some Background
 
 There are payload size limits when you encrypt using RSA keys. In more detail, RSA, as defined by PKCS#1,
-can be used to encrypt messages of limited size, and this size varies with the kind of "padding" used for the encryption. For example, with the commonly used "v1.5
+can be used to encrypt messages of limited size. In fact, an encrypted message always has the same size as the modulus; for a 1024-bit RSA key, this means 128 bytes. for a 2048-bit RSA key, 256 bytes. The encryption process includes some padding. With the commonly used "v1.5
 padding" and a 2048-bit RSA key, the maximum size of data that can be
 encrypted with RSA is 245 bytes. ([cite](https://security.stackexchange.com/a/33445/81523))
-For OAEP padding, the maximum size is 214 bytes.
+For OAEP padding and the same 2048-bit key, the maximum size is 214 bytes.
+
 
 This may seem to be a severe limitation. But, in practice people avoid this limitation by using hybrid cryptosystems:
 use RSA encryption to encrypt a symmetric key, which is small, and fits under the limit for RSA crypto. Then use that
