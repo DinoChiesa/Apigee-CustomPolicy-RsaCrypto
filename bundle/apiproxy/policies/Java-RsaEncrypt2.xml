@@ -7,6 +7,6 @@
     <Property name='encode-result'>base16</Property>
     <Property name='debug'>true</Property>
   </Properties>
-  <ClassName>com.google.apigee.callouts.RsaCryptoCallout</ClassName>
-  <ResourceURL>java://apigee-callout-rsa-crypto-20210409.jar</ResourceURL>
+  <ClassName>com.google.apigee.callouts.RsaCrypto</ClassName>
+  <ResourceURL>java://apigee-callout-rsa-crypto-20211020.jar</ResourceURL>
 </JavaCallout>

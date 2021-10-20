@@ -1,10 +1,10 @@
-<RaiseFault name='RF-CryptoError'>
+<RaiseFault name='RF-SigningError'>
   <IgnoreUnresolvedVariables>true</IgnoreUnresolvedVariables>
   <FaultResponse>
     <Set>
       <Payload contentType='application/json'>{
   "error" : true,
-  "message" : "{crypto_error}"
+  "message" : "{signing_error}"
 }
 </Payload>
       <StatusCode>500</StatusCode>

@@ -9,6 +9,12 @@
   </HTTPProxyConnection>
 
   <FaultRules/>
+  <DefaultFaultRule name="default-fault-rule">
+    <Step>
+      <Name>AM-Inject-Proxy-Revision-Header</Name>
+    </Step>
+    <AlwaysEnforce>true</AlwaysEnforce>
+  </DefaultFaultRule>
 
   <PreFlow>
     <Request>
@@ -16,7 +22,20 @@
           <Name>AM-DemoVariables</Name>
         </Step>
     </Request>
+    <Response>
+      <Step>
+        <Name>AM-Clean-Request-Headers-From-Response</Name>
+      </Step>
+    </Response>
   </PreFlow>
+
+  <PostFlow name="PostFlow">
+      <Response>
+      <Step>
+        <Name>AM-Inject-Proxy-Revision-Header</Name>
+      </Step>
+      </Response>
+  </PostFlow>
 
   <Flows>
 
@@ -117,6 +136,82 @@
         </Step>
       </Response>
       <Condition>(proxy.pathsuffix MatchesPath "/decrypt3") and (request.verb = "POST")</Condition>
+    </Flow>
+
+    <Flow name="sign 1">
+      <Description>sign with PKCS v1.5 padding</Description>
+      <Request>
+        <Step>
+          <Name>Java-RsaSign1</Name>
+        </Step>
+        <Step>
+          <Name>RF-SigningError</Name>
+          <Condition>signing_error != null</Condition>
+        </Step>
+      </Request>
+      <Response>
+        <Step>
+          <Name>AM-SigningResponse</Name>
+        </Step>
+      </Response>
+      <Condition>(proxy.pathsuffix MatchesPath "/sign1") and (request.verb = "POST")</Condition>
+    </Flow>
+
+    <Flow name="verify 1">
+      <Description>verify a signature with PKCS v1.5 padding</Description>
+      <Request>
+        <Step>
+          <Name>Java-RsaVerify1</Name>
+        </Step>
+        <Step>
+          <Name>RF-SigningError</Name>
+          <Condition>signing_error != null</Condition>
+        </Step>
+      </Request>
+      <Response>
+        <Step>
+          <Name>AM-VerifyResponse</Name>
+        </Step>
+      </Response>
+      <Condition>(proxy.pathsuffix MatchesPath "/verify1") and (request.verb = "POST")</Condition>
+    </Flow>
+
+    <Flow name="sign 2">
+      <Description>sign with PSS padding</Description>
+      <Request>
+        <Step>
+          <Name>Java-RsaSignPSS1</Name>
+        </Step>
+        <Step>
+          <Name>RF-SigningError</Name>
+          <Condition>signing_error != null</Condition>
+        </Step>
+      </Request>
+      <Response>
+        <Step>
+          <Name>AM-PSSSigningResponse</Name>
+        </Step>
+      </Response>
+      <Condition>(proxy.pathsuffix MatchesPath "/sign2") and (request.verb = "POST")</Condition>
+    </Flow>
+
+    <Flow name="verify 2">
+      <Description>verify a signature with PSS padding</Description>
+      <Request>
+        <Step>
+          <Name>Java-RsaVerifyPSS1</Name>
+        </Step>
+        <Step>
+          <Name>RF-SigningError</Name>
+          <Condition>signing_error != null</Condition>
+        </Step>
+      </Request>
+      <Response>
+        <Step>
+          <Name>AM-VerifyResponse</Name>
+        </Step>
+      </Response>
+      <Condition>(proxy.pathsuffix MatchesPath "/verify2") and (request.verb = "POST")</Condition>
     </Flow>
 
     <Flow name='unknown'>

@@ -1,0 +1,16 @@
+<AssignMessage name='AM-PSSSigningResponse'>
+  <IgnoreUnresolvedVariables>true</IgnoreUnresolvedVariables>
+  <Set>
+    <Payload contentType='application/json'>{
+  "signature": "{escapeJSON(signing_output)}",
+  "output_encoding": "{signing_output_encoding}",
+  "padding": "{signing_padding}",
+  "pss-hash": "{signing_pss-hash}",
+  "mgf1-hash": "{signing_mgf1-hash}",
+  "note": "The verifier needs the padding, the hash functions, and a matching key to verify the signature."
+}
+</Payload>
+    <StatusCode>200</StatusCode>
+    <ReasonPhrase>OK</ReasonPhrase>
+  </Set>
+</AssignMessage>

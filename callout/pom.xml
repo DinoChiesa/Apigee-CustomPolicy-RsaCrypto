@@ -4,7 +4,7 @@
 
   <groupId>com.google.apigee</groupId>
   <artifactId>apigee-callout-rsa-crypto</artifactId>
-  <version>20210409</version>
+  <version>20211020</version>
   <name>ApigeeCustomRsaEncryptor</name>
   <url>http://maven.apache.org</url>
   <packaging>jar</packaging>
@@ -122,6 +122,19 @@
         <artifactId>maven-antrun-plugin</artifactId>
         <executions>
           <execution>
+            <id>ant1</id>
+            <phase>clean</phase>
+            <configuration>
+              <tasks>
+                <delete>
+                  <fileset dir="${apiproxy.java.rsrc.dir}"
+                           includes="*.jar" />
+                </delete>
+              </tasks>
+            </configuration>
+          </execution>
+          <execution>
+            <id>ant2</id>
             <phase>package</phase>
             <configuration>
               <tasks>
