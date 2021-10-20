@@ -340,7 +340,7 @@ upload that jar file into the API Proxy via the Apigee API Proxy Editor .
 
 * Apigee expressions v1.0
 * Apigee message-flow v1.0
-* Bouncy Castle 1.64
+* Bouncy Castle 1.67
 
 These jars are specified in the pom.xml file.
 
