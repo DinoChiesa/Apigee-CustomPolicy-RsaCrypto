@@ -344,11 +344,14 @@ upload that jar file into the API Proxy via the Apigee API Proxy Editor .
 
 These jars are specified in the pom.xml file.
 
-The first two JARs are builtin to Apigee. BouncyCastle is available as part of
-the Apigee runtime, although it is not a documented part of the Apigee platform
-and is therefore not guaranteed to remain available. To avoid any doubt, you
-may wish to upload the BouncyCastle jar as a resource, either with the apiproxy
-or with the organization or environment.
+The first two JARs are builtin to Apigee.
+
+The BouncyCastle jar is available as part of the Apigee runtime, although it is
+not a documented part of the Apigee platform and is therefore not guaranteed to
+remain available. In the highly unlikely future scenario in which Apigee removes
+the BC jar from the Apigee runtime, you could simply upload the BouncyCastle jar
+as a resource, either with the apiproxy or with the organization or environment,
+to resolve the dependency.
 
 
 ## Author
@@ -360,4 +363,3 @@ godino@google.com
 ## Bugs & Limitations
 
 * When encrypting, does not allow parameterization of the hash function for RSA-OAEP.  Always uses SHA-256.
-
