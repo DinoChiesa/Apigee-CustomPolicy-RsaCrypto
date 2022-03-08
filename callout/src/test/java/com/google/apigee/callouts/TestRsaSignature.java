@@ -16,11 +16,12 @@
 package com.google.apigee.callouts;
 
 import com.apigee.flow.execution.ExecutionResult;
-import java.util.HashMap;
-import java.util.Map;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class TestRsaSignature extends TestRsaBase {
 
@@ -77,6 +78,31 @@ public class TestRsaSignature extends TestRsaBase {
     properties.put("private-key", privateKey1);
     properties.put("debug", "true");
     properties.put("encode-result", outputEncoding);
+    msgCtxt.setVariable("message.content", "The quick brown fox jumped over the lazy dog.");
+
+    RsaSignature callout = new RsaSignature(properties);
+    ExecutionResult result = callout.execute(msgCtxt, exeCtxt);
+
+    reportThings(properties);
+    Assert.assertEquals(result, ExecutionResult.SUCCESS);
+    String error = msgCtxt.getVariable("signing_error");
+    Assert.assertNull(error);
+
+    String encodedPublicKey = msgCtxt.getVariable("signing_output-publickey-pem");
+    Assert.assertNull(encodedPublicKey);
+    String encodedPrivateKey = msgCtxt.getVariable("signing_output-privatekey-pem");
+    Assert.assertNull(encodedPrivateKey);
+  }
+
+  @Test(dataProvider = "output-encodings")
+  public void sign_ProvidedKey_ProvidedSignatureMethod(String outputEncoding) {
+    Map<String, String> properties = new HashMap<String, String>();
+    properties.put("testname", "sign_ProvidedKey");
+    properties.put("action", "sign");
+    properties.put("private-key", privateKey1);
+    properties.put("debug", "true");
+    properties.put("encode-result", outputEncoding);
+    properties.put("signature-algorithm", "SHA1withRSA");
     msgCtxt.setVariable("message.content", "The quick brown fox jumped over the lazy dog.");
 
     RsaSignature callout = new RsaSignature(properties);

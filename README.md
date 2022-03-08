@@ -7,7 +7,7 @@ signing of data or message payloads, or verification of such signatures.
 Specifically it can perform:
 * RSA encryption or decryption with PKCS1 padding.
 * RSA encryption or decryption with OAEP padding, using SHA-256 as the primary and MGF1 hash functions. (For more on OAEP, see [this](https://stackoverflow.com/a/49484492/48082).)
-* RSA signing with PKCS V1.5 padding or PSS padding. With the latter you can specify the primary and MGF1 hash functions.
+* RSA signing with PKCS V1.5 padding or PSS padding, using an algorithm of your choice. With the latter you can specify the primary and MGF1 hash functions.
 
 
 There are two callout classes:
@@ -101,6 +101,7 @@ There are a variety of options, which you can select using Properties in the con
 - When encrypting,
   - the policy always uses ECB, which is sort of a misnomer since it's a single block encryption.
   - when using OAEP padding, the policy uses SHA-256 and MGF1 as the hashes. You cannot override either of those. The MGF1 internally by default uses SHA-256, and  you _can_ override that with the mgf1-hash property. Specify one of {SHA1, SHA256, SHA384, SHA512}.
+  - when using PKCS1 padding, you can override the default algorithm SHA256WithRSA. Check Java documentation for valid values (for example: SHA1withRSA)
 
 - you can optionally encode (base64, base64url, base16) the output byte stream upon encryption or signing.
 
@@ -116,6 +117,7 @@ There are a variety of options, which you can select using Properties in the con
       <Property name='action'>sign</Property>
       <Property name='private-key'>{my_private_key}</Property>
       <Property name='encode-result'>base64</Property>
+      <Property name='signature-algorithm'>SHA1withRSA</Property>
     </Properties>
     <ClassName>com.google.apigee.callouts.RsaSignature</ClassName>
     <ResourceURL>java://apigee-callout-rsa-crypto-20211020.jar</ResourceURL>
