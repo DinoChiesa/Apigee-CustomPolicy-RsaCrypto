@@ -3,7 +3,7 @@
 // This is the main callout class for the RSA Crypto custom policy for Apigee Edge.
 // For full details see the Readme accompanying this source file.
 //
-// Copyright (c) 2018-2021 Google LLC.
+// Copyright (c) 2018-2022 Google LLC.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -100,17 +100,6 @@ public class RsaCrypto extends RsaBase implements Execution {
     if (cryptoAction == null) throw new IllegalStateException("specify a valid action.");
 
     return cryptoAction;
-  }
-
-  protected String getMgf1Hash(MessageContext msgCtxt) throws Exception {
-    return _getStringProp(msgCtxt, "mgf1-hash", defaultMgf1Hash);
-  }
-
-  protected static MGF1ParameterSpec getMGF1ParameterSpec(String mgf1Hash) {
-    if ((mgf1Hash == null) || mgf1Hash.equals("")) {
-      return MGF1ParameterSpec.SHA256;
-    }
-    return new MGF1ParameterSpec(mgf1Hash.toUpperCase());
   }
 
   private String getPadding(MessageContext msgCtxt) throws Exception {

@@ -2,10 +2,10 @@
   <Properties>
     <Property name='action'>sign</Property>
     <Property name='debug'>true</Property>
-    <Property name='padding'>PSS</Property>
+    <Property name='scheme'>PSS</Property>
     <Property name='private-key'>{private.my_private_key}</Property>
     <Property name='encode-result'>base64url</Property>
   </Properties>
   <ClassName>com.google.apigee.callouts.RsaSignature</ClassName>
-  <ResourceURL>java://apigee-callout-rsa-crypto-20211020.jar</ResourceURL>
+  <ResourceURL>java://apigee-callout-rsa-crypto-20220310.jar</ResourceURL>
 </JavaCallout>

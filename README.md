@@ -7,7 +7,7 @@ signing of data or message payloads, or verification of such signatures.
 Specifically it can perform:
 * RSA encryption or decryption with PKCS1 padding.
 * RSA encryption or decryption with OAEP padding, using SHA-256 as the primary and MGF1 hash functions. (For more on OAEP, see [this](https://stackoverflow.com/a/49484492/48082).)
-* RSA signing with PKCS V1.5 padding or PSS padding. With the latter you can specify the primary and MGF1 hash functions.
+* RSA signing and verification with the RSASSA-PKCS1-v1_5 scheme or the RSASSA-PSS scheme. With either scheme, you can specify the primary hash function. With PSS, you can also specify hash used within MGF1. These all default to SHA-256. For more on these schemes see [RFC 3447](https://www.rfc-editor.org/rfc/rfc3447.html#section-8).
 
 
 There are two callout classes:
@@ -73,7 +73,7 @@ using asymmetric keys.
 
 ## License
 
-This code is Copyright (c) 2017-2021 Google LLC, and is released under the
+This code is Copyright (c) 2017-2022 Google LLC, and is released under the
 Apache Source License v2.0. For information see the [LICENSE](LICENSE) file.
 
 ## Disclaimer
@@ -100,7 +100,11 @@ There are a variety of options, which you can select using Properties in the con
 - the policy uses as its source, the message.content. If you wish to encrypt, decrypt, sign or verify something else, specify it with the source property
 - When encrypting,
   - the policy always uses ECB, which is sort of a misnomer since it's a single block encryption.
-  - when using OAEP padding, the policy uses SHA-256 and MGF1 as the hashes. You cannot override either of those. The MGF1 internally by default uses SHA-256, and  you _can_ override that with the mgf1-hash property. Specify one of {SHA1, SHA256, SHA384, SHA512}.
+  - when using OAEP padding, the policy uses SHA-256 and MGF1 as the hashes. You cannot override either of those. The MGF1 internally by default uses SHA-256, and  you _can_ override that with the mgf1-hash property. Specify one of {SHA-1, SHA-256, SHA-384, SHA-512}.
+
+- When signing,
+  - when using the PKCS1 scheme, the policy uses the algorithm SHA-256 by default as the primary hash. You can override that with other values, ex SHA-1.
+  - when using the PSS scheme, the policy uses SHA-256 as the primary hash and SHA-256 as the hash for MGF1. These must be the same.
 
 - you can optionally encode (base64, base64url, base16) the output byte stream upon encryption or signing.
 
@@ -108,17 +112,19 @@ There are a variety of options, which you can select using Properties in the con
   - you can optionally UTF-8 decode the output octet stream upon decryption.
 
 
-## Example: Signing with PKCS v1.5 padding
+## Example: Signing with the PKCS v1.5 Scheme
 
   ```xml
   <JavaCallout name="Java-RsaSign">
     <Properties>
       <Property name='action'>sign</Property>
+      <Property name='scheme'>PKCS_V1.5</Property>
       <Property name='private-key'>{my_private_key}</Property>
       <Property name='encode-result'>base64</Property>
+      <Property name='primary-hash>SHA-1</Property>
     </Properties>
     <ClassName>com.google.apigee.callouts.RsaSignature</ClassName>
-    <ResourceURL>java://apigee-callout-rsa-crypto-20211020.jar</ResourceURL>
+    <ResourceURL>java://apigee-callout-rsa-crypto-20220310.jar</ResourceURL>
   </JavaCallout>
   ```
 
@@ -127,36 +133,37 @@ Here's what will happen with this policy configuration:
 * the `action` is sign, and the class is RsaSignature, so the policy will generate a signature.
 * No `source` property is specified, therefore this policy will sign the message.content.
 * When using the policy to sign, you must specify a private key. With the above configuration, the policy will deserialize the private key from the PEM string contained in the variable `my_private_key`.
-* There is no `padding` property specified, so the policy will use PKCS v1.5 padding.
-* No `output` property is present, so the policy will encode the resulting ciphertext via base64, and store it into a variable named signing_output (the default).
+* There is a `scheme` property specified, so the policy will use the RSASSA-PKCS1-v1_5 scheme.
+* There is a `primary-hash` property specified, so the policy will use SHA-1 (resulting in a Java algorithm of SHA1withRSA). (The default is SHA-256, resulting in SHA256WithRSA)
+* No `output` property is present, so the policy will encode the resulting ciphertext according to the configured `encode-result` - base64 - and store it into a variable named signing_output (the default).
 
 To verify the resulting signature, either within Apigee with this policy, or
 using some other system, the verifier needs to use the corresponding public
 key, and the same padding.
 
-## Example: Signing with PSS Padding
+## Example: Signing with the RSASSA-PSS Scheme
 
   ```xml
   <JavaCallout name="Java-RsaSign">
     <Properties>
       <Property name='action'>sign</Property>
       <Property name='private-key'>{my_private_key}</Property>
-      <Property name='padding'>PSS</Property>
+      <Property name='scheme'>PSS</Property>
       <Property name='encode-result'>base64url</Property>
     </Properties>
     <ClassName>com.google.apigee.callouts.RsaSignature</ClassName>
-    <ResourceURL>java://apigee-callout-rsa-crypto-20211020.jar</ResourceURL>
+    <ResourceURL>java://apigee-callout-rsa-crypto-20220310.jar</ResourceURL>
   </JavaCallout>
   ```
 
 This policy works like the prior example, with these exceptions:
 
-* The `padding` property tells the policy to use PSS padding. There is no `pss-hash` or `mgf1-hash` property, so those default to `SHA-256`.
+* The `scheme` property tells the policy to use the RSASSA-PSS signing scheme. There is no `primary-hash` or `mgf1-hash` property, so those default to `SHA-256`.
 
 
 To verify the resulting signature, either within Apigee with this policy, or
 using some other system, the verifier needs to use the corresponding public
-key, and PSS padding, with SHA-256 as the primary hash and the mgf1 function.
+key, and PSS scheme, with SHA-256 as the primary hash and the mgf1 function.
 
 ## Example: Verifying with PSS Padding
 
@@ -165,16 +172,16 @@ key, and PSS padding, with SHA-256 as the primary hash and the mgf1 function.
     <Properties>
       <Property name='action'>verify</Property>
       <Property name='public-key'>{my_public_key}</Property>
-      <Property name='padding'>PSS</Property>
+      <Property name='scheme'>PSS</Property>
       <Property name='decode-signature'>base64url</Property>
       <Property name='signature-source'>request.header.signature</Property>
     </Properties>
     <ClassName>com.google.apigee.callouts.RsaSignature</ClassName>
-    <ResourceURL>java://apigee-callout-rsa-crypto-20211020.jar</ResourceURL>
+    <ResourceURL>java://apigee-callout-rsa-crypto-20220310.jar</ResourceURL>
   </JavaCallout>
   ```
 
-This policy verifies a base64url-encoded signature using PSS padding, using
+This policy verifies a base64url-encoded signature using the PSS scheme, using
 SHA-256 for both the primary and MGF1 hashes.
 
 ## Example: Basic Encryption with Numerous Defaults
@@ -187,7 +194,7 @@ SHA-256 for both the primary and MGF1 hashes.
       <Property name='encode-result'>base64</Property>
     </Properties>
     <ClassName>com.google.apigee.callouts.RsaCrypto</ClassName>
-    <ResourceURL>java://apigee-callout-rsa-crypto-20211020.jar</ResourceURL>
+    <ResourceURL>java://apigee-callout-rsa-crypto-20220310.jar</ResourceURL>
   </JavaCallout>
   ```
 
@@ -215,7 +222,7 @@ key, and the same padding.
       <Property name='encode-result'>base64</Property>
     </Properties>
     <ClassName>com.google.apigee.callouts.RsaCrypto</ClassName>
-    <ResourceURL>java://apigee-callout-rsa-crypto-20211020.jar</ResourceURL>
+    <ResourceURL>java://apigee-callout-rsa-crypto-20220310.jar</ResourceURL>
   </JavaCallout>
   ```
 
@@ -225,7 +232,7 @@ Here's what will happen with this policy configuration:
 * the `generate-key` property is true, so
   Because `generate-key` is true, the policy will generate a 128-bit random key and use that as the "source", or the thing to encrypt. The policy will ignore a `source` property when `generate-key` is true.
 * The policy will deserialize the public key from the PEM string contained in the variable `my_public_key`
-* There is no` padding` specified, so PKCS1Padding is used.
+* There is no `padding` specified, so PKCS1Padding is used.
 * The policy stores the outputs - the generated key in cleartext, and the ciphertext for that
   key (in other words, the encrypted version) - into context variables named `crypto_output_key` and `crypto_output`, encoded via base64.
 
@@ -247,7 +254,7 @@ the recovered AES key.
       <Property name='utf8-decode-result'>true</Property>
     </Properties>
     <ClassName>com.google.apigee.callouts.RsaCrypto</ClassName>
-    <ResourceURL>java://apigee-callout-rsa-crypto-20211020.jar</ResourceURL>
+    <ResourceURL>java://apigee-callout-rsa-crypto-20220310.jar</ResourceURL>
   </JavaCallout>
   ```
 
@@ -290,9 +297,9 @@ These are the properties available on the policy when using RsaSigning (for sign
 
 | Property          | Description                                                                                                                                       |
 |-------------------|---------------------------------------------------------------------------------------------------------------------------------------------------|
-| padding           | optional. either PSS or PKCS_v1.5.                                                                                                                |
-| pss-hash          | optional. The policy uses SHA-256 by default for the PSS hash. You can specify SHA-1 to override that.                                            |
-| mgf1-hash         | optional. The policy uses SHA-256 for the Mask generation function (MGF1). Specify one of {SHA1, SHA256, SHA384, SHA512} to override that.        |
+| scheme            | optional. either PSS or PKCS1_v1.5.                                                                                                               |
+| primary-hash      | optional. For either scheme, the policy uses SHA-256 by default for the primary hash. You can specify {SHA-1, SHA-384, SHA-512} to override that. |
+| mgf1-hash         | optional. For PSS, the policy uses SHA-256 for the Mask generation function (MGF1). Specify one of {SHA-1, SHA-384, SHA-512} to override that.    |
 | output            | optional. When signing, name of the variable in which to store the output. Defaults to signing_output.                                            |
 | signature-source  | required when action = `verify`. This is the name of a variable containing the encoded signature.                                                 |
 | decode-signature  | optional when action = `verify`. One of {base16, base64, base64url}. Used to decode the signature.                                                |
@@ -307,7 +314,8 @@ Errors can result at runtime if:
 
 * you do not specify an `action` property, or the `action` is neither `encrypt` nor `decrypt`, nor `sign` nor `verify`
 * you pass an invalid string for the public key or private key
-* you pass a padding option that is neither OAEP nor PKCS1 when encrypting, or neither PSS nor PKCS_v1.5 when signing.
+* you pass a padding option that is neither OAEP nor PKCS1 when encrypting
+* you pass a scheme that is neither PSS nor PKCS_v1.5 when signing
 * you specify `action` = decrypt or verify, and don't supply a `public-key`
 * you specify `action` = encrypt or sign, and don't supply a `private-key`
 * you use a `decode-*` parameter that is none of {base16, base64, base64url}
@@ -331,7 +339,7 @@ To build: `mvn clean package`
 The Jar source code includes tests.
 
 If you edit policies offline, copy [the jar file for the custom
-policy](callout/target/apigee-callout-rsa-crypto-20211020.jar) to your
+policy](callout/target/apigee-callout-rsa-crypto-20220310.jar) to your
 apiproxy/resources/java directory.  If you don't edit proxy bundles offline,
 upload that jar file into the API Proxy via the Apigee API Proxy Editor .
 
@@ -356,7 +364,7 @@ to resolve the dependency.
 
 ## Author
 
-Dino Chiesa
+Dino Chiesa  
 godino@google.com
 
 

@@ -72,13 +72,13 @@ public abstract class TestRsaBase {
           @Mock()
           public Object getVariable(final String name) {
             Object value = getVariables().get(name);
-            //System.out.printf("%s = %s\n", name, (value==null) ? "-nul-" : value.toString());
+            System.out.printf("%s = %s\n", name, (value==null) ? "-nul-" : value.toString());
             return value;
           }
 
           @Mock()
           public boolean setVariable(final String name, final Object value) {
-            //System.out.printf("%s <= %s\n", name, (value==null) ? "-nul-" : value);
+            System.out.printf("%s <= %s\n", name, (value==null) ? "-nul-" : value);
             getVariables().put(name, value);
             return true;
           }

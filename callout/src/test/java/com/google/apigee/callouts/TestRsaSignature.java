@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2021 Google LLC
+// Copyright (c) 2018-2022 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,11 +16,12 @@
 package com.google.apigee.callouts;
 
 import com.apigee.flow.execution.ExecutionResult;
-import java.util.HashMap;
-import java.util.Map;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class TestRsaSignature extends TestRsaBase {
 
@@ -94,11 +95,36 @@ public class TestRsaSignature extends TestRsaBase {
   }
 
   @Test(dataProvider = "output-encodings")
+  public void sign_ProvidedKey_ProvidedSignatureMethod(String outputEncoding) {
+    Map<String, String> properties = new HashMap<String, String>();
+    properties.put("testname", "sign_ProvidedKey");
+    properties.put("action", "sign");
+    properties.put("private-key", privateKey1);
+    properties.put("debug", "true");
+    properties.put("encode-result", outputEncoding);
+    properties.put("signature-algorithm", "SHA1withRSA");
+    msgCtxt.setVariable("message.content", "The quick brown fox jumped over the lazy dog.");
+
+    RsaSignature callout = new RsaSignature(properties);
+    ExecutionResult result = callout.execute(msgCtxt, exeCtxt);
+
+    reportThings(properties);
+    Assert.assertEquals(result, ExecutionResult.SUCCESS);
+    String error = msgCtxt.getVariable("signing_error");
+    Assert.assertNull(error);
+
+    String encodedPublicKey = msgCtxt.getVariable("signing_output-publickey-pem");
+    Assert.assertNull(encodedPublicKey);
+    String encodedPrivateKey = msgCtxt.getVariable("signing_output-privatekey-pem");
+    Assert.assertNull(encodedPrivateKey);
+  }
+
+  @Test(dataProvider = "output-encodings")
   public void sign_PSS_ProvidedKey(String outputEncoding) {
     Map<String, String> properties = new HashMap<String, String>();
     properties.put("testname", "sign_PSS_ProvidedKey");
     properties.put("action", "sign");
-    properties.put("padding", "PSS");
+    properties.put("scheme", "PSS");
     properties.put("private-key", privateKey1);
     properties.put("debug", "true");
     properties.put("encode-result", outputEncoding);
@@ -185,7 +211,33 @@ public class TestRsaSignature extends TestRsaBase {
     Map<String, String> properties = new HashMap<String, String>();
     properties.put("testname", "verify_PSS_ProvidedKey");
     properties.put("action", "verify");
-    properties.put("padding", "PSS");
+    properties.put("scheme", "PSS");  // alias of RSASSA-PSS
+    properties.put("signature-source", "sigvar");
+    properties.put("decode-signature", encoding);
+    properties.put("public-key", publicKey1);
+    properties.put("debug", "true");
+    msgCtxt.setVariable("message.content", "The quick brown fox jumped over the lazy dog.");
+    msgCtxt.setVariable("sigvar", encodedSignature);
+
+    RsaSignature callout = new RsaSignature(properties);
+    ExecutionResult result = callout.execute(msgCtxt, exeCtxt);
+
+    reportThings(properties);
+    Assert.assertEquals(result, ExecutionResult.SUCCESS);
+    String error = msgCtxt.getVariable("signing_error");
+    Assert.assertNull(error);
+
+    String verificationOk = msgCtxt.getVariable("signing_verified");
+    Assert.assertNotNull(verificationOk);
+    Assert.assertEquals(verificationOk.toLowerCase(), "true");
+  }
+
+  @Test(dataProvider = "pss-signature-encodings")
+  public void verify_RSASSA_PSS_ProvidedKey(String encodedSignature, String encoding) {
+    Map<String, String> properties = new HashMap<String, String>();
+    properties.put("testname", "verify_RSASSA_PSS_ProvidedKey");
+    properties.put("action", "verify");
+    properties.put("scheme", "RSASSA-PSS");
     properties.put("signature-source", "sigvar");
     properties.put("decode-signature", encoding);
     properties.put("public-key", publicKey1);
@@ -211,8 +263,8 @@ public class TestRsaSignature extends TestRsaBase {
     Map<String, String> properties = new HashMap<String, String>();
     properties.put("testname", "verify_PSS_ProvidedKey_Wrong_Hash");
     properties.put("action", "verify");
-    properties.put("padding", "PSS");
-    properties.put("pss-hash", "SHA-1");
+    properties.put("scheme", "PSS");
+    properties.put("primary-hash", "SHA-1");
     properties.put("signature-source", "sigvar");
     properties.put("decode-signature", encoding);
     properties.put("public-key", publicKey1);
@@ -274,8 +326,8 @@ public class TestRsaSignature extends TestRsaBase {
     Map<String, String> properties = new HashMap<String, String>();
     properties.put("testname", "verify_PSS_ProvidedKey_Inconsistent_Input");
     properties.put("action", "verify");
-    properties.put("padding", "PSS");
-    properties.put("pss-hash", "SHA-256");
+    properties.put("scheme", "PSS");
+    properties.put("primary-hash", "SHA-256");
     properties.put("mgf1-hash", "SHA-1");
     properties.put("signature-source", "sigvar");
     properties.put("decode-signature", "base64url");
