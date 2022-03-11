@@ -34,7 +34,7 @@ import java.util.regex.Pattern;
 public abstract class RsaBase {
   protected static final String defaultOutputVarSuffix = "output";
   protected static final String TRUE = "true";
-  protected static final String defaultMgf1Hash = "SHA-256";
+  protected static final String DEFAULT_MGF1_HASH = "SHA-256";
   private static final Pattern variableReferencePattern =
       Pattern.compile("(.*?)\\{([^\\{\\} :][^\\{\\} ]*?)\\}(.*?)");
   private static final Pattern commonErrorPattern = Pattern.compile("^(.+?)[:;] (.+)$");
@@ -170,7 +170,11 @@ public abstract class RsaBase {
   }
 
   protected String getMgf1Hash(MessageContext msgCtxt) throws Exception {
-    return _getStringProp(msgCtxt, "mgf1-hash", defaultMgf1Hash);
+    return getMgf1Hash(msgCtxt, DEFAULT_MGF1_HASH);
+  }
+
+  protected String getMgf1Hash(MessageContext msgCtxt, String defaultHash) throws Exception {
+    return _getStringProp(msgCtxt, "mgf1-hash", defaultHash);
   }
 
   protected static MGF1ParameterSpec getMGF1ParameterSpec(String mgf1Hash) {

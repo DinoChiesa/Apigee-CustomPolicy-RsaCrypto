@@ -2,11 +2,11 @@
   <Properties>
     <Property name='action'>verify</Property>
     <Property name='debug'>true</Property>
-    <Property name='padding'>PSS</Property>
+    <Property name='scheme'>PSS</Property>
     <Property name='public-key'>{my_public_key}</Property>
     <Property name='signature-source'>request.header.signature</Property>
     <Property name='decode-signature'>base64url</Property>
   </Properties>
   <ClassName>com.google.apigee.callouts.RsaSignature</ClassName>
-  <ResourceURL>java://apigee-callout-rsa-crypto-20211020.jar</ResourceURL>
+  <ResourceURL>java://apigee-callout-rsa-crypto-20220310.jar</ResourceURL>
 </JavaCallout>

@@ -1,3 +1,17 @@
+
+**/Icon*
+**/Icon
+*/Icon
+Icon
+
+**/#*.*#
+**/*.*~
+**/*~
+
+**/target/
+
+**/*.class
+
 /callout/target/
 /.idea/
 /callout/apigee-callout-rsa-crypto.iml

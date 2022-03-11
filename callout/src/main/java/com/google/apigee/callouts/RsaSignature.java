@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2021 Google LLC.
+// Copyright (c) 2018-2022 Google LLC.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ import com.apigee.flow.execution.IOIntensive;
 import com.apigee.flow.execution.spi.Execution;
 import com.apigee.flow.message.MessageContext;
 import com.google.apigee.encoding.Base16;
-
 import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.security.spec.MGF1ParameterSpec;
@@ -32,10 +31,10 @@ import java.util.function.Function;
 
 @IOIntensive
 public class RsaSignature extends RsaBase implements Execution {
-  protected static final String defaultPssHash = "SHA-256";
-  protected static final String defaultPadding = "PKCS_V1.5";
-  public static final String DEFAULT_SIGNATURE_ALGORITHM = "SHA256WithRSA";
-  public static final String DEFAULT_SIGNATURE_PROVIDER = "BC";
+  protected static final String DEFAULT_PRIMARY_HASH = "SHA-256";
+  protected static final String DEFAULT_SCHEME = "PKCS1_V1.5";
+  protected static final String DEFAULT_SIGNATURE_ALGORITHM = "SHA256WithRSA";
+  protected static final String DEFAULT_SIGNATURE_PROVIDER = "BC";
 
   public RsaSignature(Map properties) {
     super(properties);
@@ -45,6 +44,37 @@ public class RsaSignature extends RsaBase implements Execution {
     SIGN,
     VERIFY
   };
+
+  enum SigningScheme {
+    PKCS1V15,
+    PSS,
+    INVALID,
+    NOT_SPECIFIED;
+
+    public static SigningScheme forName(String name) {
+      if (name == null) return SigningScheme.NOT_SPECIFIED;
+      if ("PSS".equals(name) || "RSASSA-PSS".equals(name)) return SigningScheme.PSS;
+      if ("PKCS1V15".equals(name) || "PKCS1_V1.5".equals(name) || "RSASSA-PKCS1-v1_5".equals(name))
+        return SigningScheme.PKCS1V15;
+      return SigningScheme.INVALID;
+    }
+  };
+
+  static class HashFunctions {
+    public String primary;
+    public String mgf1;
+  }
+
+  static class SigningConfiguration {
+    public SigningScheme scheme;
+    public HashFunctions hashes;
+    public String signatureProvider;
+
+    public SigningConfiguration() {
+      hashes = new HashFunctions();
+      scheme = SigningScheme.NOT_SPECIFIED;
+    }
+  }
 
   String getVarPrefix() {
     return "signing_";
@@ -113,66 +143,58 @@ public class RsaSignature extends RsaBase implements Execution {
     return (sig.toString()).getBytes(StandardCharsets.UTF_8);
   }
 
-  protected String getPadding(MessageContext msgCtxt) throws Exception {
-    String padding = _getStringProp(msgCtxt, "padding", defaultPadding);
-    padding = padding.toUpperCase();
-    if (!padding.equals("PKCS_V1.5") && !padding.equals("PSS")) {
-      throw new IllegalStateException("unrecognized padding");
+  protected SigningScheme getScheme(MessageContext msgCtxt) throws Exception {
+    String schemeString = _getStringProp(msgCtxt, "scheme", DEFAULT_SCHEME);
+    SigningScheme scheme = SigningScheme.forName(schemeString.toUpperCase());
+
+    if (scheme == SigningScheme.INVALID) {
+      throw new IllegalStateException("unrecognized scheme");
     }
-    msgCtxt.setVariable(varName("padding"), padding);
-    return padding;
+
+    msgCtxt.setVariable(varName("scheme"), scheme.name());
+    return scheme;
   }
 
-  class PSSHashes {
-    public String primaryHash;
-    public String mgf1;
-
-    public PSSHashes(String primaryHash, String mgf1) {
-      this.primaryHash = primaryHash;
-      this.mgf1 = mgf1;
+  private static Signature getSignatureInstance(SigningConfiguration sigConfig) throws Exception {
+    if (sigConfig.scheme == SigningScheme.PKCS1V15) {
+      // RSASSA-PKCS1-v1_5
+      String signingAlgorithm = sigConfig.hashes.primary.equals("SHA-256") ?
+        "SHA256withRSA" : "SHA1withRSA";
+      return Signature.getInstance(signingAlgorithm, sigConfig.signatureProvider);
     }
-  }
 
-  protected PSSHashes getPSSHashes(MessageContext msgCtxt) throws Exception {
-    String pssHash = _getStringProp(msgCtxt, "pss-hash", defaultPssHash);
-    msgCtxt.setVariable(varName("pss-hash"), pssHash);;
-
-    String mgf1Hash = _getStringProp(msgCtxt, "mgf1-hash", pssHash);
-    msgCtxt.setVariable(varName("mgf1-hash"), mgf1Hash);;
-    return new PSSHashes(pssHash, mgf1Hash);
-  }
-
-  private static Signature getSignatureInstance(PSSHashes pssHashes, String signatureAlgorithm, String signatureProvider)
-      throws NoSuchAlgorithmException, NoSuchProviderException, InvalidAlgorithmParameterException {
-    if (pssHashes == null) {
-      return Signature.getInstance(signatureAlgorithm, signatureProvider);
+    // RSASSA-PSS
+    if (sigConfig.hashes == null) {
+      throw new IllegalStateException("missing PSS hashes");
     }
-    Signature signature = Signature.getInstance(
-                                                pssHashes.primaryHash.equals("SHA-256")?
-                                                "SHA256withRSA/PSS" :
-                                                "SHA1withRSA/PSS",
-                                                signatureProvider);
-    //Signature signature = Signature.getInstance("SHA256withRSA/PSS", "BC");
-    MGF1ParameterSpec mgf1pspec = getMGF1ParameterSpec(pssHashes.mgf1);
+    String signingAlgorithm =
+        sigConfig.hashes.primary.equals("SHA-256") ? "SHA256withRSA/PSS" : "SHA1withRSA/PSS";
+    Signature signature = Signature.getInstance(signingAlgorithm, sigConfig.signatureProvider);
+
+    MGF1ParameterSpec mgf1pspec = getMGF1ParameterSpec(sigConfig.hashes.mgf1);
     int saltLength =
-        (pssHashes.mgf1.equals("SHA-1")) ? 20 : (pssHashes.mgf1.equals("SHA-256")) ? 32 : 0;
+        (sigConfig.hashes.mgf1.equals("SHA-1"))
+            ? 20
+            : (sigConfig.hashes.mgf1.equals("SHA-256")) ? 32 : 0;
     int trailer = 1;
     signature.setParameter(
-        new PSSParameterSpec(pssHashes.primaryHash, "MGF1", mgf1pspec, saltLength, trailer));
+        new PSSParameterSpec(
+            sigConfig.hashes.primary, "MGF1", mgf1pspec, saltLength, trailer));
     return signature;
   }
 
-  public static byte[] sign(PrivateKey privateKey, byte[] data, PSSHashes pssHashes, String signatureAlgorithm, String signatureProvider)
+  public static byte[] sign(PrivateKey privateKey, byte[] data, SigningConfiguration sigConfig)
       throws Exception {
-    Signature signer = getSignatureInstance(pssHashes, signatureAlgorithm, signatureProvider);
+    Signature signer = getSignatureInstance(sigConfig);
     signer.initSign(privateKey);
     signer.update(data);
     return signer.sign();
   }
 
   public static boolean verify(
-          PublicKey publicKey, byte[] data, byte[] signature, PSSHashes pssHashes, String signatureAlgorithm, String signatureProvider) throws Exception {
-    Signature verifier = getSignatureInstance(pssHashes, signatureAlgorithm, signatureProvider);
+      PublicKey publicKey, byte[] data, byte[] signature, SigningConfiguration sigConfig)
+      throws Exception {
+    Signature verifier = getSignatureInstance(sigConfig);
     verifier.initVerify(publicKey);
     verifier.update(data);
     boolean result = verifier.verify(signature);
@@ -232,6 +254,33 @@ public class RsaSignature extends RsaBase implements Execution {
     return kp;
   }
 
+  SigningConfiguration initSigningConfiguration(MessageContext msgCtxt) throws Exception {
+
+    String padding = _getStringProp(msgCtxt, "padding", null);
+    if (padding != null) {
+      throw new IllegalStateException("padding is not a supported configuration option");
+    }
+
+    SigningConfiguration config = new SigningConfiguration();
+    config.scheme = getScheme(msgCtxt);
+
+    String primaryHash = _getStringProp(msgCtxt, "primary-hash", DEFAULT_PRIMARY_HASH);
+
+    msgCtxt.setVariable(varName("primary-hash"), primaryHash);
+    config.hashes.primary = primaryHash;
+
+    if (config.scheme == SigningScheme.PSS) {
+      String mgf1 = getMgf1Hash(msgCtxt, primaryHash);
+      msgCtxt.setVariable(varName("mgf1"), mgf1);
+      config.hashes.mgf1 = mgf1;
+    } else if (config.scheme != SigningScheme.PKCS1V15) {
+      throw new IllegalStateException("padding is not a supported configuration option");
+    }
+    config.signatureProvider =
+        _getStringProp(msgCtxt, "signature-provider", DEFAULT_SIGNATURE_PROVIDER);
+    return config;
+  }
+
   public ExecutionResult execute(MessageContext msgCtxt, ExecutionContext exeCtxt) {
     boolean debug = false;
     try {
@@ -241,12 +290,9 @@ public class RsaSignature extends RsaBase implements Execution {
       SignAction action = getAction(msgCtxt); // sign or verify
       msgCtxt.setVariable(varName("action"), action.name().toLowerCase());
 
-      byte[] source = getSourceBytes(action, msgCtxt);
-      String padding = getPadding(msgCtxt);
-      PSSHashes pssHashes = (padding.equals("PSS")) ? getPSSHashes(msgCtxt) : null;
+      SigningConfiguration sigConfig = initSigningConfiguration(msgCtxt);
 
-      String signatureAlgorithm = _getStringProp(msgCtxt, "signature-algorithm", DEFAULT_SIGNATURE_ALGORITHM);
-      String signatureProvider = _getStringProp(msgCtxt, "signature-provider", DEFAULT_SIGNATURE_PROVIDER);
+      byte[] source = getSourceBytes(action, msgCtxt);
 
       if (action == SignAction.SIGN) {
         boolean wantGenerateKey = _getBooleanProperty(msgCtxt, "generate-key", false);
@@ -258,7 +304,7 @@ public class RsaSignature extends RsaBase implements Execution {
         } else {
           privateKey = getPrivateKey(msgCtxt);
         }
-        byte[] signature = sign(privateKey, source, pssHashes, signatureAlgorithm, signatureProvider);
+        byte[] signature = sign(privateKey, source, sigConfig);
         setSignatureOutputVariables(msgCtxt, signature);
         if (keypair != null) {
           emitKeyPair(msgCtxt, keypair);
@@ -267,7 +313,7 @@ public class RsaSignature extends RsaBase implements Execution {
         msgCtxt.setVariable(varName("verified"), "false");
         PublicKey publicKey = getPublicKey(msgCtxt);
         byte[] signature = getSignatureBytes(msgCtxt);
-        boolean verified = verify(publicKey, source, signature, pssHashes, signatureAlgorithm, signatureProvider);
+        boolean verified = verify(publicKey, source, signature, sigConfig);
         msgCtxt.setVariable(varName("verified"), Boolean.toString(verified));
         if (!verified) {
           msgCtxt.setVariable(varName("error"), "verification of the signature failed");
