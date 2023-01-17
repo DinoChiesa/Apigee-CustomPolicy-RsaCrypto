@@ -36,6 +36,10 @@ public class RsaSignature extends RsaBase implements Execution {
   protected static final String DEFAULT_SIGNATURE_ALGORITHM = "SHA256WithRSA";
   protected static final String DEFAULT_SIGNATURE_PROVIDER = "BC";
 
+  public RsaSignature() {
+    super();
+  }
+
   public RsaSignature(Map properties) {
     super(properties);
   }
