@@ -124,7 +124,7 @@ There are a variety of options, which you can select using Properties in the con
       <Property name='primary-hash>SHA-1</Property>
     </Properties>
     <ClassName>com.google.apigee.callouts.RsaSignature</ClassName>
-    <ResourceURL>java://apigee-callout-rsa-crypto-20220310.jar</ResourceURL>
+    <ResourceURL>java://apigee-callout-rsa-crypto-20230118.jar</ResourceURL>
   </JavaCallout>
   ```
 
@@ -152,7 +152,7 @@ key, and the same padding.
       <Property name='encode-result'>base64url</Property>
     </Properties>
     <ClassName>com.google.apigee.callouts.RsaSignature</ClassName>
-    <ResourceURL>java://apigee-callout-rsa-crypto-20220310.jar</ResourceURL>
+    <ResourceURL>java://apigee-callout-rsa-crypto-20230118.jar</ResourceURL>
   </JavaCallout>
   ```
 
@@ -177,7 +177,7 @@ key, and PSS scheme, with SHA-256 as the primary hash and the mgf1 function.
       <Property name='signature-source'>request.header.signature</Property>
     </Properties>
     <ClassName>com.google.apigee.callouts.RsaSignature</ClassName>
-    <ResourceURL>java://apigee-callout-rsa-crypto-20220310.jar</ResourceURL>
+    <ResourceURL>java://apigee-callout-rsa-crypto-20230118.jar</ResourceURL>
   </JavaCallout>
   ```
 
@@ -194,7 +194,7 @@ SHA-256 for both the primary and MGF1 hashes.
       <Property name='encode-result'>base64</Property>
     </Properties>
     <ClassName>com.google.apigee.callouts.RsaCrypto</ClassName>
-    <ResourceURL>java://apigee-callout-rsa-crypto-20220310.jar</ResourceURL>
+    <ResourceURL>java://apigee-callout-rsa-crypto-20230118.jar</ResourceURL>
   </JavaCallout>
   ```
 
@@ -222,7 +222,7 @@ key, and the same padding.
       <Property name='encode-result'>base64</Property>
     </Properties>
     <ClassName>com.google.apigee.callouts.RsaCrypto</ClassName>
-    <ResourceURL>java://apigee-callout-rsa-crypto-20220310.jar</ResourceURL>
+    <ResourceURL>java://apigee-callout-rsa-crypto-20230118.jar</ResourceURL>
   </JavaCallout>
   ```
 
@@ -254,7 +254,7 @@ the recovered AES key.
       <Property name='utf8-decode-result'>true</Property>
     </Properties>
     <ClassName>com.google.apigee.callouts.RsaCrypto</ClassName>
-    <ResourceURL>java://apigee-callout-rsa-crypto-20220310.jar</ResourceURL>
+    <ResourceURL>java://apigee-callout-rsa-crypto-20230118.jar</ResourceURL>
   </JavaCallout>
   ```
 
@@ -339,7 +339,7 @@ To build: `mvn clean package`
 The Jar source code includes tests.
 
 If you edit policies offline, copy [the jar file for the custom
-policy](callout/target/apigee-callout-rsa-crypto-20220310.jar) to your
+policy](callout/target/apigee-callout-rsa-crypto-20230118.jar) to your
 apiproxy/resources/java directory.  If you don't edit proxy bundles offline,
 upload that jar file into the API Proxy via the Apigee API Proxy Editor .
 

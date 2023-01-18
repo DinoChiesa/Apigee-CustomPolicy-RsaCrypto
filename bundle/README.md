@@ -1,7 +1,7 @@
 # RSA Encryptor and Decryptor sample proxy bundle
 
 This directory contains the configuration for a sample proxy bundle
-that shows how to use the Java custom policy for doing RSA Crypto.
+that shows how to use the Java custom policy for Apigee for doing RSA Crypto.
 
 ## Using the Proxy
 
