@@ -27,6 +27,7 @@ import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.security.spec.MGF1ParameterSpec;
 import java.util.Base64;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -49,6 +50,10 @@ public abstract class RsaBase {
   };
 
   protected final Map<String, String> properties;
+
+  public RsaBase() {
+    this.properties = new HashMap<String, String>();
+  }
 
   public RsaBase(Map properties) {
     this.properties = CalloutUtil.genericizeMap(properties);
