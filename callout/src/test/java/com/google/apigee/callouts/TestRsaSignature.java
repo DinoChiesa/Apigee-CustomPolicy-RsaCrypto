@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2022 Google LLC
+// Copyright (c) 2018-2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,12 +16,11 @@
 package com.google.apigee.callouts;
 
 import com.apigee.flow.execution.ExecutionResult;
+import java.util.HashMap;
+import java.util.Map;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
-
-import java.util.HashMap;
-import java.util.Map;
 
 public class TestRsaSignature extends TestRsaBase {
 
@@ -211,7 +210,7 @@ public class TestRsaSignature extends TestRsaBase {
     Map<String, String> properties = new HashMap<String, String>();
     properties.put("testname", "verify_PSS_ProvidedKey");
     properties.put("action", "verify");
-    properties.put("scheme", "PSS");  // alias of RSASSA-PSS
+    properties.put("scheme", "PSS"); // alias of RSASSA-PSS
     properties.put("signature-source", "sigvar");
     properties.put("decode-signature", encoding);
     properties.put("public-key", publicKey1);
@@ -289,30 +288,30 @@ public class TestRsaSignature extends TestRsaBase {
   @DataProvider(name = "pss-signature-encodings")
   public Object[][] dataProviderMethod3() {
     final String base16Signature =
-      "77c1ac4f797616b9d7dd26edc835d238a9ea33d77fa4386923b918a19ff87385"
-      + "879366f607c75ccbd6d6b96a799c81370dc3105f6adefb936e8710098eed42cf"
-      + "88b2c82465ce00b3f15ec90a6cfc32f231a9fd1c409a0ec84817d5ab11535234"
-      + "556c2b7691b88645085e3f32d987e1d66d7c2e3d20152228937d0820921da61e"
-      + "858a33b3a40cd9a9e3c23b583c481b2821c4a3ed9e0293b6750181b4bb1a2d9a"
-      + "69eda987863b192248710852889e43d2c64b04bef71729a1d2b2cb65370dd006"
-      + "eb7eaa4e4b07f8a25e805d9311acc996e9b3fd80fa0f41622f1257bed1c62d90"
-      + "a9cccff8ee7bd9d035b5af5c40a2f2bac6d35138ad01ea3631bf723c17997fd8";
+        "77c1ac4f797616b9d7dd26edc835d238a9ea33d77fa4386923b918a19ff87385"
+            + "879366f607c75ccbd6d6b96a799c81370dc3105f6adefb936e8710098eed42cf"
+            + "88b2c82465ce00b3f15ec90a6cfc32f231a9fd1c409a0ec84817d5ab11535234"
+            + "556c2b7691b88645085e3f32d987e1d66d7c2e3d20152228937d0820921da61e"
+            + "858a33b3a40cd9a9e3c23b583c481b2821c4a3ed9e0293b6750181b4bb1a2d9a"
+            + "69eda987863b192248710852889e43d2c64b04bef71729a1d2b2cb65370dd006"
+            + "eb7eaa4e4b07f8a25e805d9311acc996e9b3fd80fa0f41622f1257bed1c62d90"
+            + "a9cccff8ee7bd9d035b5af5c40a2f2bac6d35138ad01ea3631bf723c17997fd8";
 
     final String base64Signature =
-      "RvRD/NSGMlybKwhn1BskB7wlEZ/g9M4Z6h6YNB96Ws4gmLWamdUJD3xS/+qMztvv"
-      + "OelbvR6QTuvx6IESfXK27Tyb+VfmBCGrRlJ9HvkR4lmQsy+e5y3jGCY5Y5y2SX+r"
-      + "YfAuKNzDs6jAoa1BN2TSSffYvsJxd4Xrh26V9GhJJkH5zDIYDV7wxkImgIZSAA1f"
-      + "q05g/4NpGlNz4rOPnCHsEsPbjuwDWvE9lcGEC9+LJ7VpsMqBJ/+frkSI+4lB9Zw0"
-      + "N5P/JWgK1XCIDHApNVQ6ePkwexqb9QHQYX8DK2TdG92ZgI2tZP9y0hNj6dOdFA1d"
-      + "7xskwvxOEIxHWKFeLt2I6g==";
+        "RvRD/NSGMlybKwhn1BskB7wlEZ/g9M4Z6h6YNB96Ws4gmLWamdUJD3xS/+qMztvv"
+            + "OelbvR6QTuvx6IESfXK27Tyb+VfmBCGrRlJ9HvkR4lmQsy+e5y3jGCY5Y5y2SX+r"
+            + "YfAuKNzDs6jAoa1BN2TSSffYvsJxd4Xrh26V9GhJJkH5zDIYDV7wxkImgIZSAA1f"
+            + "q05g/4NpGlNz4rOPnCHsEsPbjuwDWvE9lcGEC9+LJ7VpsMqBJ/+frkSI+4lB9Zw0"
+            + "N5P/JWgK1XCIDHApNVQ6ePkwexqb9QHQYX8DK2TdG92ZgI2tZP9y0hNj6dOdFA1d"
+            + "7xskwvxOEIxHWKFeLt2I6g==";
 
     final String base64UrlSignature =
-      "uM59y8-HV1Pmi9i7rrJZs-NK4G0I4utRg6hvYjFi0hIkGgGnL1EEMO7wHKaWVD9y"
-      + "OVIZpJY7j-rpSu8bPpvUObS5OqFq1WoSVA33PV0T20NAJiS988WNC4ZB1qnveZIP"
-      + "2bF_JFtxC0ElcqRQtfgk9983NAXghyMGGoVUsd9s0-Rkj2pUSI03StEKcypgfhql"
-      + "xF43ZX7a4MFIjbToq-qRh_isou-K7IG8cW_bt3JFtbTxas9f-SLLCN_bA8ixNVJR"
-      + "LgucgxMnEmiOouQ2cXNWfqMUTf1T77SSwyuz8Rn4_zxXA7XzTlp-iohKAChicGEA"
-      + "MLzLLWTXJD5ivbzXGIC9ng";
+        "uM59y8-HV1Pmi9i7rrJZs-NK4G0I4utRg6hvYjFi0hIkGgGnL1EEMO7wHKaWVD9y"
+            + "OVIZpJY7j-rpSu8bPpvUObS5OqFq1WoSVA33PV0T20NAJiS988WNC4ZB1qnveZIP"
+            + "2bF_JFtxC0ElcqRQtfgk9983NAXghyMGGoVUsd9s0-Rkj2pUSI03StEKcypgfhql"
+            + "xF43ZX7a4MFIjbToq-qRh_isou-K7IG8cW_bt3JFtbTxas9f-SLLCN_bA8ixNVJR"
+            + "LgucgxMnEmiOouQ2cXNWfqMUTf1T77SSwyuz8Rn4_zxXA7XzTlp-iohKAChicGEA"
+            + "MLzLLWTXJD5ivbzXGIC9ng";
 
     return new Object[][] {
       {base16Signature, "base16"},
@@ -343,11 +342,11 @@ public class TestRsaSignature extends TestRsaBase {
     Assert.assertEquals(result, ExecutionResult.ABORT);
     String error = msgCtxt.getVariable("signing_error");
     Assert.assertNotNull(error);
-    Assert.assertEquals(error, "digest algorithm for MGF should be the same as for PSS parameters.");
+    Assert.assertEquals(
+        error, "digest algorithm for MGF should be the same as for PSS parameters.");
 
     String verificationOk = msgCtxt.getVariable("signing_verified");
     Assert.assertNotNull(verificationOk);
     Assert.assertEquals(verificationOk.toLowerCase(), "false");
   }
-
 }

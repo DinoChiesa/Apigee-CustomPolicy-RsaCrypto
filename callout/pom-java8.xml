@@ -1,0 +1,268 @@
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>com.google.apigee</groupId>
+  <artifactId>apigee-callout-rsa-crypto</artifactId>
+  <version>20250121</version>
+  <name>ApigeeCustomRsaEncryptor</name>
+  <url>http://maven.apache.org</url>
+  <packaging>jar</packaging>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    <jdk.target.version>8</jdk.target.version>
+    <maven.compiler.source>1.8</maven.compiler.source>
+    <maven.compiler.target>1.8</maven.compiler.target>
+    <maven.compiler.release>1.8</maven.compiler.release>
+    <apigee.expressions.version>1.0.0</apigee.expressions.version>
+    <apigee.message.flow.version>1.0.0</apigee.message.flow.version>
+    <testng.version>6.8.7</testng.version> <!-- current: 6.9.4 -->
+    <jmockit.version>1.49.4</jmockit.version>
+    <bouncycastle.version>[1.70,)</bouncycastle.version>
+    <apiproxy.java.rsrc.dir>../bundle/apiproxy/resources/java</apiproxy.java.rsrc.dir>
+  </properties>
+
+  <repositories>
+    <repository>
+      <id>artifact-registry</id>
+      <url>https://us-maven.pkg.dev/apigee-release/apigee-java-callout-dependencies</url>
+    </repository>
+  </repositories>
+
+  <dependencies>
+
+    <dependency>
+      <groupId>com.apigee.gateway.libraries</groupId>
+      <artifactId>message-flow</artifactId>
+      <version>1.0.0</version>
+      <scope>provided</scope>
+      <type>jar</type>
+    </dependency>
+    <dependency>
+      <groupId>com.apigee.infra.libraries</groupId>
+      <artifactId>expressions</artifactId>
+      <version>1.0.0</version>
+      <scope>provided</scope>
+      <type>jar</type>
+    </dependency>
+
+    <dependency>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bcpkix-jdk15on</artifactId>
+      <version>${bouncycastle.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bcprov-jdk15on</artifactId>
+      <version>${bouncycastle.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.testng</groupId>
+      <artifactId>testng</artifactId>
+      <version>${testng.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+
+    <!--
+    see https://stackoverflow.com/a/63877276
+
+    <dependency>
+      <groupId>org.jmockit</groupId>
+      <artifactId>jmockit</artifactId>
+      <version>${jmockit.version}</version>
+      <scope>test</scope>
+    </dependency>
+    -->
+
+    <dependency>
+      <groupId>com.github.hazendaz.jmockit</groupId>
+      <artifactId>jmockit</artifactId>
+      <version>${jmockit.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+  </dependencies>
+
+  <build>
+    <finalName>${project.artifactId}-${project.version}</finalName>
+    <plugins>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <version>3.8.1</version>
+        <executions>
+          <execution>
+            <id>copy-dependencies</id>
+            <phase>prepare-package</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${project.build.directory}/lib</outputDirectory>
+              <includeScope>runtime</includeScope>
+              <excludeScope>provided</excludeScope>
+              <overWriteReleases>false</overWriteReleases>
+              <overWriteSnapshots>false</overWriteSnapshots>
+              <overWriteIfNewer>true</overWriteIfNewer>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.13.0</version>
+        <configuration>
+          <showDeprecation>true</showDeprecation>
+          <release>${jdk.target.version}</release>
+          <!-- the following may be necessary when building with java 1.8 -->
+          <source>${jdk.target.version}</source>
+          <target>${jdk.target.version}</target>
+
+          <!-- testCompile gets its configuration from maven.compiler.release  -->
+          <compilerArgs>
+            <!-- <arg>-verbose</arg> -->
+            <arg>-Xlint:unchecked,deprecation</arg>
+          </compilerArgs>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>3.4.2</version>
+        <configuration>
+          <archive>
+            <!-- do not include the pom.xml file in the generated jar -->
+            <addMavenDescriptor>false</addMavenDescriptor>
+          </archive>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <version>3.1.0</version>
+        <executions>
+          <execution>
+            <id>ant1</id>
+            <phase>clean</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <target>
+                <delete>
+                  <fileset dir="${apiproxy.java.rsrc.dir}">
+                    <include name="*.jar" />
+                  </fileset>
+                </delete>
+              </target>
+            </configuration>
+          </execution>
+          <execution>
+            <id>ant2</id>
+            <phase>package</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <target>
+                <copy todir="${apiproxy.java.rsrc.dir}">
+                  <fileset dir="${project.build.directory}">
+                    <include name="${project.build.finalName}.jar"/>
+                    <!-- copy any required dependencies -->
+                    <include name="lib/*.jar"/>
+<!--
+                    <exclude name="lib/bc*-jdk15on-*.*.jar"/>
+-->
+                    <exclude name="lib/message-flow-1.0.0.jar"/>
+                    <exclude name="lib/expressions-1.0.0.jar"/>
+                  </fileset>
+                  <mapper type="flatten"/>
+                </copy>
+              </target>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>3.5.2</version>
+        <configuration>
+          <!-- to allow the build to work with current versions of jmockit -->
+          <argLine>
+            -javaagent:"${settings.localRepository}"/com/github/hazendaz/jmockit/jmockit/${jmockit.version}/jmockit-${jmockit.version}.jar
+          </argLine>
+          <!--
+          <excludes>
+            <exclude>**/TestToExclude.java</exclude>
+          </excludes>
+          -->
+          <!-- debug logging for tests -->
+          <systemPropertyVariables>
+            <org.slf4j.simpleLogger.defaultLogLevel>DEBUG</org.slf4j.simpleLogger.defaultLogLevel>
+            <org.slf4j.simpleLogger.showDateTime>true</org.slf4j.simpleLogger.showDateTime>
+            <!--
+                to use slf4j-jdk14
+
+                mvn clean test -Djava.util.logging.config.file=jdk14-logging.properties
+
+                contents of that file should be:
+                  handlers=java.util.logging.ConsoleHandler
+                  .level=ALL
+                  java.util.logging.ConsoleHandler.level=ALL
+            -->
+          </systemPropertyVariables>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <version>3.5.0</version>
+        <executions>
+          <execution>
+            <id>enforce-maven</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <requireMavenVersion>
+                  <version>3.9.0</version>
+                </requireMavenVersion>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>versions-maven-plugin</artifactId>
+        <version>2.18.0</version>
+        <executions>
+          <execution>
+            <phase>compile</phase>
+            <goals>
+              <goal>display-dependency-updates</goal>
+              <goal>display-plugin-updates</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+    </plugins>
+  </build>
+
+</project>

@@ -73,7 +73,7 @@ using asymmetric keys.
 
 ## License
 
-This code is Copyright (c) 2017-2022 Google LLC, and is released under the
+This code is Copyright (c) 2017-2025 Google LLC, and is released under the
 Apache Source License v2.0. For information see the [LICENSE](LICENSE) file.
 
 ## Disclaimer
@@ -82,7 +82,8 @@ This example is not an official Google product, nor is it part of an official Go
 
 ## Using the Custom Policy
 
-You do not need to build the Jar in order to use the custom policy.
+You do not need to build the Jar in order to use the custom policy.  You do need
+to package the jar and its dependencies into your API proxy.
 
 When you use the policy to encrypt data, the resulting cipher-text can be
 decrypted by other systems. Likewise, the policy can decrypt cipher-text
@@ -124,7 +125,7 @@ There are a variety of options, which you can select using Properties in the con
       <Property name='primary-hash>SHA-1</Property>
     </Properties>
     <ClassName>com.google.apigee.callouts.RsaSignature</ClassName>
-    <ResourceURL>java://apigee-callout-rsa-crypto-20230118.jar</ResourceURL>
+    <ResourceURL>java://apigee-callout-rsa-crypto-20250121.jar</ResourceURL>
   </JavaCallout>
   ```
 
@@ -152,7 +153,7 @@ key, and the same padding.
       <Property name='encode-result'>base64url</Property>
     </Properties>
     <ClassName>com.google.apigee.callouts.RsaSignature</ClassName>
-    <ResourceURL>java://apigee-callout-rsa-crypto-20230118.jar</ResourceURL>
+    <ResourceURL>java://apigee-callout-rsa-crypto-20250121.jar</ResourceURL>
   </JavaCallout>
   ```
 
@@ -177,7 +178,7 @@ key, and PSS scheme, with SHA-256 as the primary hash and the mgf1 function.
       <Property name='signature-source'>request.header.signature</Property>
     </Properties>
     <ClassName>com.google.apigee.callouts.RsaSignature</ClassName>
-    <ResourceURL>java://apigee-callout-rsa-crypto-20230118.jar</ResourceURL>
+    <ResourceURL>java://apigee-callout-rsa-crypto-20250121.jar</ResourceURL>
   </JavaCallout>
   ```
 
@@ -194,7 +195,7 @@ SHA-256 for both the primary and MGF1 hashes.
       <Property name='encode-result'>base64</Property>
     </Properties>
     <ClassName>com.google.apigee.callouts.RsaCrypto</ClassName>
-    <ResourceURL>java://apigee-callout-rsa-crypto-20230118.jar</ResourceURL>
+    <ResourceURL>java://apigee-callout-rsa-crypto-20250121.jar</ResourceURL>
   </JavaCallout>
   ```
 
@@ -222,7 +223,7 @@ key, and the same padding.
       <Property name='encode-result'>base64</Property>
     </Properties>
     <ClassName>com.google.apigee.callouts.RsaCrypto</ClassName>
-    <ResourceURL>java://apigee-callout-rsa-crypto-20230118.jar</ResourceURL>
+    <ResourceURL>java://apigee-callout-rsa-crypto-20250121.jar</ResourceURL>
   </JavaCallout>
   ```
 
@@ -254,7 +255,7 @@ the recovered AES key.
       <Property name='utf8-decode-result'>true</Property>
     </Properties>
     <ClassName>com.google.apigee.callouts.RsaCrypto</ClassName>
-    <ResourceURL>java://apigee-callout-rsa-crypto-20230118.jar</ResourceURL>
+    <ResourceURL>java://apigee-callout-rsa-crypto-20250121.jar</ResourceURL>
   </JavaCallout>
   ```
 
@@ -326,40 +327,52 @@ Errors can result at runtime if:
 ## Building the Jar
 
 You do not need to build the Jar in order to use the custom policy. The custom policy is
-ready to use, with policy configuration. You need to re-build the jar only if you want
+ready to use, with policy configuration. You do need
+to package the jar and its dependencies into your API proxy.
+
+You need to re-build the jar only if you want
 to modify the behavior of the custom policy. Before you do that, be sure you understand
 all the configuration options - the policy may be usable for you without modification.
 
-If you do wish to build the jar, you can use [maven](https://maven.apache.org/download.cgi) to do so. The build requires JDK8. Before you run the build the first time, you need to download the Apigee dependencies into your local maven repo.
+If you do wish to build the jar, you will use [Apache Maven](https://maven.apache.org/) and Java. To build, you need:
 
-Preparation, first time only: `./buildsetup.sh`
+- JDK 8 or JDK 11
+- maven v3.9 at a minimum
 
-To build: `mvn clean package`
+To build on JDK 11, make sure you have a JDK11 bin on your path, and:
 
-The Jar source code includes tests.
+```
+mvn clean package
+```
 
-If you edit policies offline, copy [the jar file for the custom
-policy](callout/target/apigee-callout-rsa-crypto-20230118.jar) to your
-apiproxy/resources/java directory.  If you don't edit proxy bundles offline,
-upload that jar file into the API Proxy via the Apigee API Proxy Editor .
+To build on JDK 8, make sure you have a JDK8 bin on your path, and:
+
+```
+mvn -f pom-java8.xml clean package
+```
+
+The 'package' goal will copy the jar _and its dependencies_ to the resources/java directory for the
+example proxy bundle. If you want to use this in your own API Proxy, you need
+to copy this JAR and its dependencies into the appropriate API Proxy bundle. Or include the jar as an
+environment-wide or organization-wide jar via the Apigee administrative API.
 
 
 ## Build Dependencies
 
 * Apigee expressions v1.0
 * Apigee message-flow v1.0
-* Bouncy Castle 1.67
+* Bouncy Castle 1.70+
 
 These jars are specified in the pom.xml file.
 
 The first two JARs are builtin to Apigee.
 
-The BouncyCastle jar is available as part of the Apigee runtime, although it is
-not a documented part of the Apigee platform and is therefore not guaranteed to
-remain available. In the highly unlikely future scenario in which Apigee removes
-the BC jar from the Apigee runtime, you could simply upload the BouncyCastle jar
-as a resource, either with the apiproxy or with the organization or environment,
-to resolve the dependency.
+The BouncyCastle jars will be downloaded when you build, or you can download
+them manually from maven.
+
+If you have other Java callouts that use BC, you could simply upload the
+BouncyCastle jars as a resource, with either the organization or environment, to
+satisfy the dependency.
 
 
 ## Author

@@ -1,9 +1,9 @@
 // TestRsaCrypto.java
 //
-// Test code for the AES Crypto custom policy for Apigee Edge. Uses TestNG.
+// Test code for the RSA Crypto custom policy for Apigee Edge. Uses TestNG.
 // For full details see the Readme accompanying this source file.
 //
-// Copyright (c) 2018-2021 Google LLC
+// Copyright (c) 2018-2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -37,15 +37,10 @@
 
 package com.google.apigee.callouts;
 
-import com.apigee.flow.execution.ExecutionContext;
 import com.apigee.flow.execution.ExecutionResult;
-import com.apigee.flow.message.MessageContext;
 import java.util.HashMap;
 import java.util.Map;
-import mockit.Mock;
-import mockit.MockUp;
 import org.testng.Assert;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 public class TestRsaCrypto extends TestRsaBase {
@@ -122,14 +117,33 @@ public class TestRsaCrypto extends TestRsaBase {
     properties.put("encode-result", "base16");
 
     // This will fail.
-    // RSA can encrypt messages that are at most several bytes shorter than the modulus of the key pair. The extra bytes are for padding, and the exact number depends on the padding scheme in use.
+    // RSA can encrypt messages that are at most several bytes shorter than the modulus of the key
+    // pair. The extra bytes are for padding, and the exact number depends on the padding scheme in
+    // use.
     // see https://security.stackexchange.com/a/33445/81523
 
     msgCtxt.setVariable(
         "message.content",
-        "Four score and seven years ago our fathers brought forth on this continent, a new nation, conceived in Liberty, and dedicated to the proposition that all men are created equal.\n"
-            + "Now we are engaged in a great civil war, testing whether that nation, or any nation so conceived and so dedicated, can long endure. We are met on a great battle-field of that war. We have come to dedicate a portion of that field, as a final resting place for those who here gave their lives that that nation might live. It is altogether fitting and proper that we should do this.\n"
-            + "But, in a larger sense, we can not dedicate -- we can not consecrate -- we can not hallow -- this ground. The brave men, living and dead, who struggled here, have consecrated it, far above our poor power to add or detract. The world will little note, nor long remember what we say here, but it can never forget what they did here. It is for us the living, rather, to be dedicated here to the unfinished work which they who fought here have thus far so nobly advanced. It is rather for us to be here dedicated to the great task remaining before us -- that from these honored dead we take increased devotion to that cause for which they gave the last full measure of devotion -- that we here highly resolve that these dead shall not have died in vain -- that this nation, under God, shall have a new birth of freedom -- and that government of the people, by the people, for the people, shall not perish from the earth.");
+        "Four score and seven years ago our fathers brought forth on this continent, a new nation,"
+            + " conceived in Liberty, and dedicated to the proposition that all men are created"
+            + " equal.\n"
+            + "Now we are engaged in a great civil war, testing whether that nation, or any nation"
+            + " so conceived and so dedicated, can long endure. We are met on a great battle-field"
+            + " of that war. We have come to dedicate a portion of that field, as a final resting"
+            + " place for those who here gave their lives that that nation might live. It is"
+            + " altogether fitting and proper that we should do this.\n"
+            + "But, in a larger sense, we can not dedicate -- we can not consecrate -- we can not"
+            + " hallow -- this ground. The brave men, living and dead, who struggled here, have"
+            + " consecrated it, far above our poor power to add or detract. The world will little"
+            + " note, nor long remember what we say here, but it can never forget what they did"
+            + " here. It is for us the living, rather, to be dedicated here to the unfinished work"
+            + " which they who fought here have thus far so nobly advanced. It is rather for us to"
+            + " be here dedicated to the great task remaining before us -- that from these honored"
+            + " dead we take increased devotion to that cause for which they gave the last full"
+            + " measure of devotion -- that we here highly resolve that these dead shall not have"
+            + " died in vain -- that this nation, under God, shall have a new birth of freedom --"
+            + " and that government of the people, by the people, for the people, shall not perish"
+            + " from the earth.");
 
     RsaCrypto callout = new RsaCrypto(properties);
     ExecutionResult result = callout.execute(msgCtxt, exeCtxt);
@@ -165,7 +179,7 @@ public class TestRsaCrypto extends TestRsaBase {
     Assert.assertNull(error);
 
     // the output is not predicatable, because randomization.
-    //String output = msgCtxt.getVariable("crypto_output");
+    // String output = msgCtxt.getVariable("crypto_output");
     // Assert.assertEquals(output, "something"); // NO
   }
 
@@ -349,7 +363,8 @@ public class TestRsaCrypto extends TestRsaBase {
     reportThings(properties);
     // retrieve output
     String error = msgCtxt.getVariable("crypto_error");
-    Assert.assertEquals(error, "Didn't find OpenSSL key. Found: org.bouncycastle.asn1.x509.SubjectPublicKeyInfo");
+    Assert.assertEquals(
+        error, "Didn't find OpenSSL key. Found: org.bouncycastle.asn1.x509.SubjectPublicKeyInfo");
     String output = msgCtxt.getVariable("crypto_output");
     Assert.assertNull(output);
   }
@@ -380,7 +395,6 @@ public class TestRsaCrypto extends TestRsaBase {
     Assert.assertNull(output);
     Assert.assertEquals(error, "private-key resolves to null or empty.");
   }
-
 
   @Test()
   public void encrypt_QuickBrownFox_MissingKey() {
@@ -563,7 +577,9 @@ public class TestRsaCrypto extends TestRsaBase {
     // retrieve output
     String error = msgCtxt.getVariable("crypto_error");
     Assert.assertNotNull(error);
-    Assert.assertEquals(error, "Decryption error");
+    Assert.assertTrue(
+        error.equals("Decryption error") || error.equals("Padding error in decryption"));
+    // Assert.assertTrue(error == "Decryption error" || error == "Padding error in decryption");
     String output = msgCtxt.getVariable("crypto_output");
     Assert.assertNull(output);
   }
@@ -594,7 +610,8 @@ public class TestRsaCrypto extends TestRsaBase {
     // retrieve output
     String error = msgCtxt.getVariable("crypto_error");
     Assert.assertNotNull(error);
-    Assert.assertEquals(error, "Decryption error");
+    Assert.assertTrue(
+        error.equals("Decryption error") || error.equals("Padding error in decryption"));
     String output = msgCtxt.getVariable("crypto_output");
     Assert.assertNull(output);
   }

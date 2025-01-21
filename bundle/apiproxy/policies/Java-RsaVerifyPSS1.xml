@@ -8,5 +8,5 @@
     <Property name='decode-signature'>base64url</Property>
   </Properties>
   <ClassName>com.google.apigee.callouts.RsaSignature</ClassName>
-  <ResourceURL>java://apigee-callout-rsa-crypto-20230118.jar</ResourceURL>
+  <ResourceURL>java://apigee-callout-rsa-crypto-20250121.jar</ResourceURL>
 </JavaCallout>

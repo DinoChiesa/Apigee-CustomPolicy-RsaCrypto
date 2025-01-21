@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2021 Google LLC
+// Copyright (c) 2018-2025 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -31,72 +31,42 @@
 
 package com.google.apigee.callouts;
 
-import com.apigee.flow.execution.ExecutionContext;
-import com.apigee.flow.execution.ExecutionResult;
-import com.apigee.flow.message.MessageContext;
-import java.util.HashMap;
-import java.util.Map;
-import mockit.Mock;
-import mockit.MockUp;
-import org.testng.Assert;
+import com.google.apigee.fakes.FakeExecutionContext;
+import com.google.apigee.fakes.FakeMessage;
+import com.google.apigee.fakes.FakeMessageContext;
+import java.io.InputStream;
+import java.lang.reflect.Method;
 import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
 
 public abstract class TestRsaBase {
+
+  FakeMessage message;
+  FakeMessageContext msgCtxt;
+  FakeExecutionContext exeCtxt;
+
+  InputStream messageContentStream;
 
   static {
     java.security.Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
   }
 
-  protected MessageContext msgCtxt;
-  protected ExecutionContext exeCtxt;
+  @BeforeMethod
+  public void beforeMethod(Method method) throws Exception {
+    String methodName = method.getName();
+    String className = method.getDeclaringClass().getName();
+    System.out.printf("\n\n==================================================================\n");
+    System.out.printf("TEST %s.%s()\n", className, methodName);
 
-  @BeforeMethod()
-  public void testSetup1() {
-
-    msgCtxt =
-        new MockUp<MessageContext>() {
-          private Map<String, Object> variables;
-
-          public void $init() {
-            getVariables();
-          }
-
-          private Map<String, Object> getVariables() {
-            if (variables == null) {
-              variables = new HashMap<String, Object>();
-            }
-            return variables;
-          }
-
-          @Mock()
-          public Object getVariable(final String name) {
-            Object value = getVariables().get(name);
-            System.out.printf("%s = %s\n", name, (value==null) ? "-nul-" : value.toString());
-            return value;
-          }
-
-          @Mock()
-          public boolean setVariable(final String name, final Object value) {
-            System.out.printf("%s <= %s\n", name, (value==null) ? "-nul-" : value);
-            getVariables().put(name, value);
-            return true;
-          }
-
-          @Mock()
-          public boolean removeVariable(final String name) {
-            if (getVariables().containsKey(name)) {
-              variables.remove(name);
-            }
-            return true;
-          }
-        }.getMockInstance();
-
-    exeCtxt = new MockUp<ExecutionContext>() {}.getMockInstance();
-    System.out.printf("=============================================\n");
+    message = new FakeMessage();
+    msgCtxt = new FakeMessageContext(message);
+    exeCtxt = new FakeExecutionContext();
   }
 
-  final protected static String privateKey1 =
+  public InputStream getMessageContentStream() {
+    return messageContentStream;
+  }
+
+  protected static final String privateKey1 =
       "-----BEGIN PRIVATE KEY-----\n"
           + "MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDXk9k01JrhGQf1\n"
           + "4B4nymHntaG9SYA2kEQOo/RK4fM2XcebFsSJQ8GgE1AC1GlWU5YzS34WW0w5GMZe\n"
@@ -126,7 +96,7 @@ public abstract class TestRsaBase {
           + "OtpRWoF2/LERvp6RNeXthgs=\n"
           + "-----END PRIVATE KEY-----\n";
 
-  final protected static String publicKey1 =
+  protected static final String publicKey1 =
       "-----BEGIN PUBLIC KEY-----\n"
           + "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA15PZNNSa4RkH9eAeJ8ph\n"
           + "57WhvUmANpBEDqP0SuHzNl3HmxbEiUPBoBNQAtRpVlOWM0t+FltMORjGXtntjSBs\n"
