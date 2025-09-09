@@ -4,7 +4,7 @@
 
   <groupId>com.google.apigee</groupId>
   <artifactId>apigee-callout-rsa-crypto</artifactId>
-  <version>20250121</version>
+  <version>20250909</version>
   <name>ApigeeCustomRsaEncryptor</name>
   <url>http://maven.apache.org</url>
   <packaging>jar</packaging>

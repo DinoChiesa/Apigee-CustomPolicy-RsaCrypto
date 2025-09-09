@@ -3,7 +3,7 @@
 // This is the main callout class for the RSA Crypto custom policy for Apigee Edge.
 // For full details see the Readme accompanying this source file.
 //
-// Copyright (c) 2018-2022 Google LLC.
+// Copyright (c) 2018-2022, 2025 Google LLC.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -79,27 +79,21 @@ public class RsaCrypto extends RsaBase implements Execution {
     return _getEncodingTypeProperty(msgCtxt, "encode-result");
   }
 
-  private static CryptoAction findByName(String name) {
-    for (CryptoAction action : CryptoAction.values()) {
-      if (name.equals(action.name())) {
-        return action;
-      }
-    }
-    return null;
-  }
-
   private CryptoAction getAction(MessageContext msgCtxt) throws Exception {
-    String action = this.properties.get("action");
+    String action = (String) this.properties.get("action");
     if (action != null) action = action.trim();
     if (action == null || action.equals("")) {
       throw new IllegalStateException("specify an action.");
     }
     action = resolveVariableReferences(action, msgCtxt);
-
-    CryptoAction cryptoAction = findByName(action.toUpperCase());
-    if (cryptoAction == null) throw new IllegalStateException("specify a valid action.");
-
-    return cryptoAction;
+    if (action == null || action.equals("")) {
+      throw new IllegalStateException("action resolves to null or empty.");
+    }
+    try {
+      return CryptoAction.valueOf(action.toUpperCase());
+    } catch (IllegalArgumentException e) {
+      throw new IllegalStateException("specify a valid action.");
+    }
   }
 
   private String getPadding(MessageContext msgCtxt) throws Exception {
@@ -203,23 +197,28 @@ public class RsaCrypto extends RsaBase implements Execution {
     boolean emitGeneratedKey =
         (action == CryptoAction.ENCRYPT) && _getBooleanProperty(msgCtxt, "generate-key", false);
 
-    Function<byte[], Object> encoder = null;
-    if (outputEncodingWanted == EncodingType.NONE) {
-      // Emit the result as a Java byte array.
-      // Will be retrievable only by another Java callout.
-      msgCtxt.setVariable(varName("output_encoding"), "none");
-      encoder = (a) -> a; // nop
-    } else if (outputEncodingWanted == EncodingType.BASE64) {
-      msgCtxt.setVariable(varName("output_encoding"), "base64");
-      encoder = (a) -> Base64.getEncoder().encodeToString(a);
-    } else if (outputEncodingWanted == EncodingType.BASE64URL) {
-      msgCtxt.setVariable(varName("output_encoding"), "base64url");
-      encoder = (a) -> Base64.getUrlEncoder().encodeToString(a);
-    } else if (outputEncodingWanted == EncodingType.BASE16) {
-      msgCtxt.setVariable(varName("output_encoding"), "base16");
-      encoder = (a) -> Base16.encode(a);
-    } else {
-      throw new IllegalStateException("unhandled encoding");
+    Function<byte[], Object> encoder;
+    switch (outputEncodingWanted) {
+      case NONE:
+        // Emit the result as a Java byte array.
+        // Will be retrievable only by another Java callout.
+        msgCtxt.setVariable(varName("output_encoding"), "none");
+        encoder = (a) -> a; // nop
+        break;
+      case BASE64:
+        msgCtxt.setVariable(varName("output_encoding"), "base64");
+        encoder = (a) -> Base64.getEncoder().encodeToString(a);
+        break;
+      case BASE64URL:
+        msgCtxt.setVariable(varName("output_encoding"), "base64url");
+        encoder = (a) -> Base64.getUrlEncoder().encodeToString(a);
+        break;
+      case BASE16:
+        msgCtxt.setVariable(varName("output_encoding"), "base16");
+        encoder = (a) -> Base16.encode(a);
+        break;
+      default:
+        throw new IllegalStateException("unhandled encoding");
     }
 
     msgCtxt.setVariable(outputVar, encoder.apply(result));

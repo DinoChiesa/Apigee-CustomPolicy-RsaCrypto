@@ -125,7 +125,7 @@ There are a variety of options, which you can select using Properties in the con
       <Property name='primary-hash>SHA-1</Property>
     </Properties>
     <ClassName>com.google.apigee.callouts.RsaSignature</ClassName>
-    <ResourceURL>java://apigee-callout-rsa-crypto-20250121.jar</ResourceURL>
+    <ResourceURL>java://apigee-callout-rsa-crypto-20250909.jar</ResourceURL>
   </JavaCallout>
   ```
 
@@ -153,7 +153,7 @@ key, and the same padding.
       <Property name='encode-result'>base64url</Property>
     </Properties>
     <ClassName>com.google.apigee.callouts.RsaSignature</ClassName>
-    <ResourceURL>java://apigee-callout-rsa-crypto-20250121.jar</ResourceURL>
+    <ResourceURL>java://apigee-callout-rsa-crypto-20250909.jar</ResourceURL>
   </JavaCallout>
   ```
 
@@ -178,7 +178,7 @@ key, and PSS scheme, with SHA-256 as the primary hash and the mgf1 function.
       <Property name='signature-source'>request.header.signature</Property>
     </Properties>
     <ClassName>com.google.apigee.callouts.RsaSignature</ClassName>
-    <ResourceURL>java://apigee-callout-rsa-crypto-20250121.jar</ResourceURL>
+    <ResourceURL>java://apigee-callout-rsa-crypto-20250909.jar</ResourceURL>
   </JavaCallout>
   ```
 
@@ -195,7 +195,7 @@ SHA-256 for both the primary and MGF1 hashes.
       <Property name='encode-result'>base64</Property>
     </Properties>
     <ClassName>com.google.apigee.callouts.RsaCrypto</ClassName>
-    <ResourceURL>java://apigee-callout-rsa-crypto-20250121.jar</ResourceURL>
+    <ResourceURL>java://apigee-callout-rsa-crypto-20250909.jar</ResourceURL>
   </JavaCallout>
   ```
 
@@ -223,7 +223,7 @@ key, and the same padding.
       <Property name='encode-result'>base64</Property>
     </Properties>
     <ClassName>com.google.apigee.callouts.RsaCrypto</ClassName>
-    <ResourceURL>java://apigee-callout-rsa-crypto-20250121.jar</ResourceURL>
+    <ResourceURL>java://apigee-callout-rsa-crypto-20250909.jar</ResourceURL>
   </JavaCallout>
   ```
 
@@ -255,7 +255,7 @@ the recovered AES key.
       <Property name='utf8-decode-result'>true</Property>
     </Properties>
     <ClassName>com.google.apigee.callouts.RsaCrypto</ClassName>
-    <ResourceURL>java://apigee-callout-rsa-crypto-20250121.jar</ResourceURL>
+    <ResourceURL>java://apigee-callout-rsa-crypto-20250909.jar</ResourceURL>
   </JavaCallout>
   ```
 

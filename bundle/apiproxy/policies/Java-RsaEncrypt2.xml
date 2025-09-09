@@ -8,5 +8,5 @@
     <Property name='debug'>true</Property>
   </Properties>
   <ClassName>com.google.apigee.callouts.RsaCrypto</ClassName>
-  <ResourceURL>java://apigee-callout-rsa-crypto-20250121.jar</ResourceURL>
+  <ResourceURL>java://apigee-callout-rsa-crypto-20250909.jar</ResourceURL>
 </JavaCallout>
