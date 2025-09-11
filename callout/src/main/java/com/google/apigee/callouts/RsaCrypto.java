@@ -41,13 +41,10 @@ import javax.crypto.spec.PSource;
 
 @IOIntensive
 public class RsaCrypto extends RsaBase implements Execution {
-  private static final String defaultCipherName = "RSA";
+  private static final String defaultShortCipherName = "RSA";
   private static final String defaultCryptoMode =
       "ECB"; // alias: None.  RSA/ECB/PKCS1Padding actually uses no ECB
   private static final String defaultCryptoPadding = "PKCS1Padding";
-  private static final Pattern paddingPattern =
-      Pattern.compile(
-          "^(PKCS1|OAEP|PKCS1Padding|OAEPWithSHA-256AndMGF1Padding)$", Pattern.CASE_INSENSITIVE);
   private static final Pattern fullCipherPattern =
       Pattern.compile(
           "^(RSA)/(None|ECB)/(PKCS1Padding|OAEPWithSHA-256AndMGF1Padding)$",
@@ -64,7 +61,36 @@ public class RsaCrypto extends RsaBase implements Execution {
   enum CryptoAction {
     DECRYPT,
     ENCRYPT
-  };
+  }
+
+  enum Padding {
+    PKCS1("PKCS1", "PKCS1Padding"),
+    OAEP("OAEP", "OAEPWithSHA-256AndMGF1Padding");
+
+    private final String alias;
+    private final String algorithmName;
+
+    Padding(String alias, String algorithmName) {
+      this.alias = alias;
+      this.algorithmName = algorithmName;
+    }
+
+    public String getAlgorithmName() {
+      return this.algorithmName;
+    }
+
+    public static Padding fromString(String text) {
+      if (text == null) {
+        return null;
+      }
+      for (Padding p : Padding.values()) {
+        if (text.equalsIgnoreCase(p.alias) || text.equalsIgnoreCase(p.algorithmName)) {
+          return p;
+        }
+      }
+      return null;
+    }
+  }
 
   String getVarPrefix() {
     return "crypto_";
@@ -96,16 +122,12 @@ public class RsaCrypto extends RsaBase implements Execution {
     }
   }
 
-  private String getPadding(MessageContext msgCtxt) throws Exception {
-    String padding = _getStringProp(msgCtxt, "padding", defaultCryptoPadding);
-    Matcher m = paddingPattern.matcher(padding);
-    if (!m.matches()) {
-      throw new IllegalStateException(String.format("Supplied padding (%s) is invalid.", padding));
-    }
-    if ("OAEP".equals(padding)) {
-      padding = "OAEPWithSHA-256AndMGF1Padding"; // alias
-    } else if ("PKCS1".equals(padding)) {
-      padding = "PKCS1Padding"; // alias
+  private Padding getPadding(MessageContext msgCtxt) throws Exception {
+    String paddingString = _getStringProp(msgCtxt, "padding", defaultCryptoPadding);
+    Padding padding = Padding.fromString(paddingString);
+    if (padding == null) {
+      throw new IllegalStateException(
+          String.format("Supplied padding (%s) is invalid.", paddingString));
     }
     return padding;
   }
@@ -114,10 +136,10 @@ public class RsaCrypto extends RsaBase implements Execution {
     return _getStringProp(msgCtxt, "mode", defaultCryptoMode);
   }
 
-  private String getCipherName(MessageContext msgCtxt) throws Exception {
+  private String getCipherName(MessageContext msgCtxt, Padding padding) throws Exception {
     String cipher = (String) this.properties.get("cipher");
     if (cipher == null || cipher.equals("")) {
-      return defaultCipherName + "/" + getMode(msgCtxt) + "/" + getPadding(msgCtxt);
+      return defaultShortCipherName + "/" + getMode(msgCtxt) + "/" + padding.getAlgorithmName();
     }
     cipher = resolveVariableReferences(cipher, msgCtxt);
     if (cipher == null || cipher.equals("")) {
@@ -134,7 +156,7 @@ public class RsaCrypto extends RsaBase implements Execution {
     }
 
     // it is a simple algorithm name; apply mode and padding
-    cipher += "/" + getMode(msgCtxt) + "/" + getPadding(msgCtxt);
+    cipher += "/" + getMode(msgCtxt) + "/" + padding.getAlgorithmName();
     m = fullCipherPattern.matcher(cipher);
     if (!m.matches()) {
       throw new IllegalStateException("that cipher is unsupported.");
@@ -147,11 +169,10 @@ public class RsaCrypto extends RsaBase implements Execution {
   }
 
   public static byte[] rsaEncrypt(
-      String cipherName, PublicKey publicKey, String mgf1Hash, byte[] clearText) throws Exception {
+      PublicKey publicKey, String mgf1Hash, byte[] clearText, String cipherName, Padding padding)
+      throws Exception {
     Cipher cipher = Cipher.getInstance(cipherName);
-    String[] parts = cipherName.split("/");
-    String padding = parts[2];
-    if (padding.equals("OAEPWithSHA-256AndMGF1Padding")) {
+    if (padding == Padding.OAEP) {
       MGF1ParameterSpec mgf1ParamSpec = getMGF1ParameterSpec(mgf1Hash);
       cipher.init(
           Cipher.ENCRYPT_MODE,
@@ -165,12 +186,10 @@ public class RsaCrypto extends RsaBase implements Execution {
   }
 
   public static byte[] rsaDecrypt(
-      String cipherName, PrivateKey privateKey, String mgf1Hash, byte[] cipherText)
+      PrivateKey privateKey, String mgf1Hash, byte[] cipherText, String cipherName, Padding padding)
       throws Exception {
     Cipher cipher = Cipher.getInstance(cipherName);
-    String[] parts = cipherName.split("/");
-    String padding = parts[2];
-    if (padding.equals("OAEPWithSHA-256AndMGF1Padding")) {
+    if (padding == Padding.OAEP) {
       MGF1ParameterSpec mgf1ParamSpec = getMGF1ParameterSpec(mgf1Hash);
       cipher.init(
           Cipher.DECRYPT_MODE,
@@ -257,7 +276,8 @@ public class RsaCrypto extends RsaBase implements Execution {
     try {
       clearVariables(msgCtxt);
       debug = getDebug(msgCtxt);
-      String cipherName = getCipherName(msgCtxt);
+      Padding padding = getPadding(msgCtxt);
+      String cipherName = getCipherName(msgCtxt, padding);
       msgCtxt.setVariable(varName("cipher"), cipherName);
 
       CryptoAction action = getAction(msgCtxt); // encrypt or decrypt
@@ -268,7 +288,7 @@ public class RsaCrypto extends RsaBase implements Execution {
 
       if (action == CryptoAction.DECRYPT) {
         PrivateKey privateKey = getPrivateKey(msgCtxt);
-        result = rsaDecrypt(cipherName, privateKey, getMgf1Hash(msgCtxt), source);
+        result = rsaDecrypt(privateKey, getMgf1Hash(msgCtxt), source, cipherName, padding);
 
         // try decode into a string from UTF-8
         if (getUtf8DecodeResult(msgCtxt)) {
@@ -278,7 +298,7 @@ public class RsaCrypto extends RsaBase implements Execution {
         }
       } else {
         PublicKey publicKey = getPublicKey(msgCtxt);
-        result = rsaEncrypt(cipherName, publicKey, getMgf1Hash(msgCtxt), source);
+        result = rsaEncrypt(publicKey, getMgf1Hash(msgCtxt), source, cipherName, padding);
         setOutput(msgCtxt, action, source, result);
       }
     } catch (Exception e) {
